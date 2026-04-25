@@ -1,0 +1,36 @@
+services:
+  wishlist-api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    image: ourwish-api
+    container_name: wishlist-api
+    expose:
+      - "5001"
+    environment:
+      NODE_ENV: production
+      PORT: 5001
+      OURWISH_DB_PATH: /data/ourwish.db
+      SESSION_COOKIE_SECURE: "false"
+    volumes:
+      - ./ourwish.db:/data/ourwish.db
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:5001/api/health"]
+      interval: 30s
+      timeout: 5s
+      start_period: 10s
+      retries: 3
+
+  wishlist:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: ourwish-web
+    container_name: wishlist
+    depends_on:
+      wishlist-api:
+        condition: service_healthy
+    ports:
+      - "5175:5175"
+    restart: unless-stopped

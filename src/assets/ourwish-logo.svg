@@ -1,0 +1,21 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="64" y1="48" x2="448" y2="464" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#2D6A4F"/>
+      <stop offset="100%" stop-color="#1D3557"/>
+    </linearGradient>
+    <linearGradient id="box" x1="160" y1="196" x2="352" y2="368" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#F2C14E"/>
+      <stop offset="100%" stop-color="#E09F3E"/>
+    </linearGradient>
+    <linearGradient id="ribbon" x1="241" y1="152" x2="286" y2="368" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#D1495B"/>
+      <stop offset="100%" stop-color="#9B2226"/>
+    </linearGradient>
+  </defs>
+  <rect x="32" y="32" width="448" height="448" rx="96" fill="url(#bg)"/>
+  <rect x="128" y="212" width="256" height="180" rx="24" fill="url(#box)"/>
+  <rect x="116" y="176" width="280" height="60" rx="20" fill="url(#box)"/>
+  <rect x="241" y="152" width="30" height="240" rx="14" fill="url(#ribbon)"/>
+  <path d="M256 156C241 118 193 111 176 145C164 170 179 193 208 208C232 220 250 219 256 218C262 219 280 220 304 208C333 193 348 170 336 145C319 111 271 118 256 156Z" fill="#D1495B"/>
+</svg>
