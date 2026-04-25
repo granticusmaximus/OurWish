@@ -15,6 +15,13 @@ dist-ssr
 # Electron build output
 release/
 
+# Environment variables
+.env
+.env.*
+
+# SQLite databases
+*.db
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
