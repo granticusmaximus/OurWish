@@ -63,9 +63,24 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 
 interface ItemInput {
   productName: string
+  category?: string | null
+  manufacturer?: string | null
   price: number
+  msrp?: number | null
   quantity: number
   url: string | null
+  officialProductURL?: string | null
+  bestRetailerURL?: string | null
+  primaryImageURL?: string | null
+  itemDescription?: string | null
+  specifications?: string | null
+  weight?: string | null
+  caliber?: string | null
+  compatibility?: string | null
+  purpose?: string | null
+  notes?: string | null
+  availabilityStatus?: string | null
+  dateRetrieved?: string | null
 }
 
 interface UpdateProfileInput {

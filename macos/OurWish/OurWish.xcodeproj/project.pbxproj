@@ -16,6 +16,7 @@
 		5B14DB9D79BDC6E26A50B5BE /* RegisterView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81F4DF15B78EE093132F701D /* RegisterView.swift */; };
 		624AB13B0FD7D225936BF73F /* WishListItemsTableView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 943FA8E5463F00CE0E772B22 /* WishListItemsTableView.swift */; };
 		776B4BE9E10326D623DBD38E /* ItemRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 31B9AD6AF2470FF752C11700 /* ItemRow.swift */; };
+		7BAD271E302178606137C9CC /* AppRuntime.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03EFFDA17FE062B086BFEDCC /* AppRuntime.swift */; };
 		7BFF97F21AADC26FBB84A26E /* MainWindowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 73BB1624D4E30FB678C7A65A /* MainWindowView.swift */; };
 		830892E6F6CC46D0ED6E6CF8 /* CreateCollaborativeListSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8969063F05DB83F7B9087559 /* CreateCollaborativeListSheet.swift */; };
 		84031205ED1AA491049EFC8E /* PurchasedItemsSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B671E270B3CF74B7D395E40 /* PurchasedItemsSection.swift */; };
@@ -35,6 +36,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		03EFFDA17FE062B086BFEDCC /* AppRuntime.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppRuntime.swift; sourceTree = "<group>"; };
 		09296FEA47A901177E2493EE /* CollaborativeDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CollaborativeDetailView.swift; sourceTree = "<group>"; };
 		0F0CD85C5A43D3448BD5C5C4 /* CreateWishListSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreateWishListSheet.swift; sourceTree = "<group>"; };
 		13FBE8D2ACEDDE3C21CA1D70 /* WishListDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WishListDetailView.swift; sourceTree = "<group>"; };
@@ -136,6 +138,7 @@
 		850B8D7C57AC2219B31F0EDA /* OurWish */ = {
 			isa = PBXGroup;
 			children = (
+				03EFFDA17FE062B086BFEDCC /* AppRuntime.swift */,
 				F9A6783464603BD625FB763E /* Assets.xcassets */,
 				785F2B5529EBF5F888F85517 /* OurWishApp.swift */,
 				0FC0865FB3197676A6AB1A57 /* Views */,
@@ -266,6 +269,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				9EF8CF03C2FC914169F24A95 /* AddItemSheet.swift in Sources */,
+				7BAD271E302178606137C9CC /* AppRuntime.swift in Sources */,
 				DA165B978FCDC44B0F9C0325 /* BrandColor.swift in Sources */,
 				00D5624D23C2BA93DD8060E3 /* CollaborativeDetailView.swift in Sources */,
 				E3549DAFDE2036A4D1107D26 /* CollaborativeItemsTableView.swift in Sources */,

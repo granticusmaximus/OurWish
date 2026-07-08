@@ -100,6 +100,27 @@ extension AppDatabase {
             }
         }
 
+        // Adds rich product metadata columns used by the firearms-oriented wish list.
+        migrator.registerMigration("v5AddWishListItemMetadata") { db in
+            try db.alter(table: "wish_list_items") { t in
+                t.add(column: "category", .text)
+                t.add(column: "manufacturer", .text)
+                t.add(column: "msrp", .double)
+                t.add(column: "official_product_url", .text)
+                t.add(column: "best_retailer_url", .text)
+                t.add(column: "primary_image_url", .text)
+                t.add(column: "item_description", .text)
+                t.add(column: "specifications", .text)
+                t.add(column: "weight", .text)
+                t.add(column: "caliber", .text)
+                t.add(column: "compatibility", .text)
+                t.add(column: "purpose", .text)
+                t.add(column: "notes", .text)
+                t.add(column: "availability_status", .text)
+                t.add(column: "date_retrieved", .datetime)
+            }
+        }
+
         return migrator
     }
 }

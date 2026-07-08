@@ -49,9 +49,24 @@ struct WishListDTO: Codable, ResponseEncodable {
 struct ItemDTO: Codable, ResponseEncodable {
     let id: Int64
     let productName: String
+    let category: String?
+    let manufacturer: String?
     let price: Double
+    let msrp: Double?
     let quantity: Int
     let url: String?
+    let officialProductURL: String?
+    let bestRetailerURL: String?
+    let primaryImageURL: String?
+    let itemDescription: String?
+    let specifications: String?
+    let weight: String?
+    let caliber: String?
+    let compatibility: String?
+    let purpose: String?
+    let notes: String?
+    let availabilityStatus: String?
+    let dateRetrieved: Date?
     let isPurchased: Bool
     let isHidden: Bool
     let imageURL: String?
@@ -59,9 +74,24 @@ struct ItemDTO: Codable, ResponseEncodable {
     init(_ item: WishListItem) {
         id = item.id!
         productName = item.productName
+        category = item.category
+        manufacturer = item.manufacturer
         price = item.price
+        msrp = item.msrp
         quantity = item.quantity
         url = item.url
+        officialProductURL = item.officialProductURL
+        bestRetailerURL = item.bestRetailerURL
+        primaryImageURL = item.primaryImageURL
+        itemDescription = item.itemDescription
+        specifications = item.specifications
+        weight = item.weight
+        caliber = item.caliber
+        compatibility = item.compatibility
+        purpose = item.purpose
+        notes = item.notes
+        availabilityStatus = item.availabilityStatus
+        dateRetrieved = item.dateRetrieved
         isPurchased = item.isPurchased
         isHidden = item.isHidden
         imageURL = item.imageData != nil ? "/api/v1/items/\(item.id!)/image" : nil
@@ -70,9 +100,24 @@ struct ItemDTO: Codable, ResponseEncodable {
     init(_ item: CollaborativeItem) {
         id = item.id!
         productName = item.productName
+        category = nil
+        manufacturer = nil
         price = item.price
+        msrp = nil
         quantity = item.quantity
         url = item.url
+        officialProductURL = nil
+        bestRetailerURL = nil
+        primaryImageURL = nil
+        itemDescription = nil
+        specifications = nil
+        weight = nil
+        caliber = nil
+        compatibility = nil
+        purpose = nil
+        notes = nil
+        availabilityStatus = nil
+        dateRetrieved = nil
         isPurchased = item.isPurchased
         isHidden = false
         imageURL = item.imageData != nil ? "/api/v1/collaborative-items/\(item.id!)/image" : nil

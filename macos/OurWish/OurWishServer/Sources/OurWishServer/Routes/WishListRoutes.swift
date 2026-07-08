@@ -8,16 +8,46 @@ struct CreateWishListRequest: Codable {
 
 struct CreateItemRequest: Codable {
     let productName: String
+    let category: String?
+    let manufacturer: String?
     let price: Double
+    let msrp: Double?
     let quantity: Int
     let url: String?
+    let officialProductURL: String?
+    let bestRetailerURL: String?
+    let primaryImageURL: String?
+    let itemDescription: String?
+    let specifications: String?
+    let weight: String?
+    let caliber: String?
+    let compatibility: String?
+    let purpose: String?
+    let notes: String?
+    let availabilityStatus: String?
+    let dateRetrieved: String?
 }
 
 struct UpdateItemRequest: Codable {
     let productName: String
+    let category: String?
+    let manufacturer: String?
     let price: Double
+    let msrp: Double?
     let quantity: Int
     let url: String?
+    let officialProductURL: String?
+    let bestRetailerURL: String?
+    let primaryImageURL: String?
+    let itemDescription: String?
+    let specifications: String?
+    let weight: String?
+    let caliber: String?
+    let compatibility: String?
+    let purpose: String?
+    let notes: String?
+    let availabilityStatus: String?
+    let dateRetrieved: String?
 }
 
 struct SetPurchasedRequest: Codable {
@@ -36,9 +66,25 @@ struct ItemsResponseDTO: Codable, ResponseEncodable {
 struct WishListRoutes {
     let repository: WishListRepository
 
+    private static let dateOnlyFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.calendar = Calendar(identifier: .iso8601)
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.timeZone = TimeZone(secondsFromGMT: 0)
+        formatter.dateFormat = "yyyy-MM-dd"
+        return formatter
+    }()
+
     private func requireUserId(_ context: AppRequestContext) throws -> Int64 {
         guard let userId = context.userId else { throw HTTPError(.unauthorized) }
         return userId
+    }
+
+    private func parseDate(_ raw: String?) -> Date? {
+        guard let raw = raw?.trimmingCharacters(in: .whitespacesAndNewlines), !raw.isEmpty else {
+            return nil
+        }
+        return Self.dateOnlyFormatter.date(from: raw) ?? ISO8601DateFormatter().date(from: raw)
     }
 
     func addRoutes(to group: RouterGroup<AppRequestContext>) {
@@ -107,7 +153,27 @@ struct WishListRoutes {
             do {
                 let item = try repository.addItem(
                     listId: listId, userId: userId, productName: body.productName,
-                    price: body.price, quantity: body.quantity, url: body.url, imageData: imageData
+                    price: body.price,
+                    quantity: body.quantity,
+                    url: body.url,
+                    imageData: imageData,
+                    metadata: WishListItemMetadata(
+                        category: body.category,
+                        manufacturer: body.manufacturer,
+                        msrp: body.msrp,
+                        officialProductURL: body.officialProductURL,
+                        bestRetailerURL: body.bestRetailerURL,
+                        primaryImageURL: body.primaryImageURL,
+                        itemDescription: body.itemDescription,
+                        specifications: body.specifications,
+                        weight: body.weight,
+                        caliber: body.caliber,
+                        compatibility: body.compatibility,
+                        purpose: body.purpose,
+                        notes: body.notes,
+                        availabilityStatus: body.availabilityStatus,
+                        dateRetrieved: parseDate(body.dateRetrieved)
+                    )
                 )
                 return ItemDTO(item)
             } catch let error as RepositoryError {
@@ -122,7 +188,26 @@ struct WishListRoutes {
             do {
                 try repository.updateItem(
                     itemId: itemId, userId: userId, productName: body.productName,
-                    price: body.price, quantity: body.quantity, url: body.url
+                    price: body.price,
+                    quantity: body.quantity,
+                    url: body.url,
+                    metadata: WishListItemMetadata(
+                        category: body.category,
+                        manufacturer: body.manufacturer,
+                        msrp: body.msrp,
+                        officialProductURL: body.officialProductURL,
+                        bestRetailerURL: body.bestRetailerURL,
+                        primaryImageURL: body.primaryImageURL,
+                        itemDescription: body.itemDescription,
+                        specifications: body.specifications,
+                        weight: body.weight,
+                        caliber: body.caliber,
+                        compatibility: body.compatibility,
+                        purpose: body.purpose,
+                        notes: body.notes,
+                        availabilityStatus: body.availabilityStatus,
+                        dateRetrieved: parseDate(body.dateRetrieved)
+                    )
                 )
                 return .noContent
             } catch let error as RepositoryError {

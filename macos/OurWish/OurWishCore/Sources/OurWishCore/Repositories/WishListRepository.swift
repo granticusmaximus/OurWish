@@ -99,7 +99,8 @@ public final class WishListRepository: Sendable {
         price: Double,
         quantity: Int,
         url: String?,
-        imageData: Data? = nil
+        imageData: Data? = nil,
+        metadata: WishListItemMetadata = .empty
     ) throws -> WishListItem {
         try validateItemInput(productName: productName, quantity: quantity)
 
@@ -113,7 +114,8 @@ public final class WishListRepository: Sendable {
                 price: price,
                 quantity: quantity,
                 url: url,
-                imageData: imageData
+                imageData: imageData,
+                metadata: metadata
             )
             try item.insert(db)
             return item
@@ -126,7 +128,8 @@ public final class WishListRepository: Sendable {
         productName: String,
         price: Double,
         quantity: Int,
-        url: String?
+        url: String?,
+        metadata: WishListItemMetadata = .empty
     ) throws {
         try validateItemInput(productName: productName, quantity: quantity)
 
@@ -135,10 +138,50 @@ public final class WishListRepository: Sendable {
             try db.execute(
                 sql: """
                     UPDATE wish_list_items
-                    SET product_name = ?, price = ?, quantity = ?, url = ?
+                    SET product_name = ?,
+                        price = ?,
+                        quantity = ?,
+                        url = ?,
+                        category = ?,
+                        manufacturer = ?,
+                        msrp = ?,
+                        official_product_url = ?,
+                        best_retailer_url = ?,
+                        primary_image_url = ?,
+                        item_description = ?,
+                        specifications = ?,
+                        weight = ?,
+                        caliber = ?,
+                        compatibility = ?,
+                        purpose = ?,
+                        notes = ?,
+                        availability_status = ?,
+                        date_retrieved = ?
                     WHERE id = ? AND user_id = ?
                     """,
-                arguments: [productName, price, quantity, url, itemId, userId]
+                arguments: [
+                    productName,
+                    price,
+                    quantity,
+                    url,
+                    metadata.category,
+                    metadata.manufacturer,
+                    metadata.msrp,
+                    metadata.officialProductURL,
+                    metadata.bestRetailerURL,
+                    metadata.primaryImageURL,
+                    metadata.itemDescription,
+                    metadata.specifications,
+                    metadata.weight,
+                    metadata.caliber,
+                    metadata.compatibility,
+                    metadata.purpose,
+                    metadata.notes,
+                    metadata.availabilityStatus,
+                    metadata.dateRetrieved,
+                    itemId,
+                    userId,
+                ]
             )
         }
     }

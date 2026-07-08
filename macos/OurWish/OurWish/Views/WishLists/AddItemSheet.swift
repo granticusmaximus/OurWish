@@ -6,11 +6,11 @@ import SwiftUI
 /// sidebar now owns which list is active, so this always adds to "the list you're
 /// currently looking at" rather than offering its own list picker.
 struct AddItemSheet: View {
+    var onClose: () -> Void
     var onSubmit: (
         _ productName: String, _ price: Double, _ quantity: Int, _ url: String?, _ imageData: Data?
     ) async throws -> Void
 
-    @Environment(\.dismiss) private var dismiss
     @State private var productName = ""
     @State private var price = ""
     @State private var quantity = "1"
@@ -59,7 +59,7 @@ struct AddItemSheet: View {
 
             HStack {
                 Spacer()
-                Button("Cancel") { dismiss() }
+                Button("Cancel", action: onClose)
                     .disabled(isSubmitting)
                 Button("Add to List", action: submit)
                     .keyboardShortcut(.defaultAction)
@@ -151,7 +151,7 @@ struct AddItemSheet: View {
                     url.isEmpty ? nil : url,
                     fetchedImageData
                 )
-                dismiss()
+                onClose()
             } catch {
                 errorMessage = error.localizedDescription
             }
