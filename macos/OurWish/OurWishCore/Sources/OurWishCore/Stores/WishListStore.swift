@@ -69,7 +69,8 @@ public final class WishListStore {
 
     public func addItem(
         productName: String, price: Double, quantity: Int, url: String?,
-        listId: Int64? = nil, imageData: Data? = nil
+        listId: Int64? = nil, imageData: Data? = nil,
+        metadata: WishListItemMetadata = .empty
     ) async throws {
         guard let userId else { return }
         guard let targetListId = listId ?? selectedListId else {
@@ -77,16 +78,25 @@ public final class WishListStore {
         }
         _ = try await service.addWishListItem(
             listId: targetListId, userId: userId,
-            productName: productName, price: price, quantity: quantity, url: url, imageData: imageData
+            productName: productName, price: price, quantity: quantity, url: url,
+            imageData: imageData, metadata: metadata
         )
         await refreshItems()
     }
 
-    public func updateItem(_ itemId: Int64, productName: String, price: Double, quantity: Int, url: String?) async throws {
+    public func updateItem(
+        _ itemId: Int64,
+        productName: String,
+        price: Double,
+        quantity: Int,
+        url: String?,
+        metadata: WishListItemMetadata = .empty
+    ) async throws {
         guard let userId else { return }
         try await service.updateWishListItem(
             itemId: itemId, userId: userId,
-            productName: productName, price: price, quantity: quantity, url: url
+            productName: productName, price: price, quantity: quantity, url: url,
+            metadata: metadata
         )
         await refreshItems()
     }

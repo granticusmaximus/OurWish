@@ -34,9 +34,24 @@ private struct RemoteWishList: Decodable {
 private struct RemoteItem: Decodable {
     let id: Int64
     let productName: String
+    let category: String?
+    let manufacturer: String?
     let price: Double
+    let msrp: Double?
     let quantity: Int
     let url: String?
+    let officialProductURL: String?
+    let bestRetailerURL: String?
+    let primaryImageURL: String?
+    let itemDescription: String?
+    let specifications: String?
+    let weight: String?
+    let caliber: String?
+    let compatibility: String?
+    let purpose: String?
+    let notes: String?
+    let availabilityStatus: String?
+    let dateRetrieved: String?
     let isPurchased: Bool
     let isHidden: Bool
     let imageURL: String?
@@ -71,6 +86,15 @@ public struct RemoteAPIError: LocalizedError {
 }
 
 public actor RemoteOurWishAPI: AuthStoreService, WishListStoreService, CollaborativeStoreService {
+    private static let dateOnlyFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.calendar = Calendar(identifier: .iso8601)
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.timeZone = TimeZone(secondsFromGMT: 0)
+        formatter.dateFormat = "yyyy-MM-dd"
+        return formatter
+    }()
+
     private let baseURL: URL
     private let session: URLSession
     private var bearerToken: String?
@@ -185,13 +209,34 @@ public actor RemoteOurWishAPI: AuthStoreService, WishListStoreService, Collabora
         price: Double,
         quantity: Int,
         url: String?,
-        imageData: Data?
+        imageData: Data?,
+        metadata: WishListItemMetadata
     ) async throws -> WishListItem {
         _ = imageData
         let response: RemoteItem = try await request(
             path: "/api/v1/wishlists/\(listId)/items",
             method: "POST",
-            body: ["productName": productName, "price": price, "quantity": quantity, "url": url]
+            body: [
+                "productName": productName,
+                "category": metadata.category,
+                "manufacturer": metadata.manufacturer,
+                "price": price,
+                "msrp": metadata.msrp,
+                "quantity": quantity,
+                "url": url,
+                "officialProductURL": metadata.officialProductURL,
+                "bestRetailerURL": metadata.bestRetailerURL,
+                "primaryImageURL": metadata.primaryImageURL,
+                "itemDescription": metadata.itemDescription,
+                "specifications": metadata.specifications,
+                "weight": metadata.weight,
+                "caliber": metadata.caliber,
+                "compatibility": metadata.compatibility,
+                "purpose": metadata.purpose,
+                "notes": metadata.notes,
+                "availabilityStatus": metadata.availabilityStatus,
+                "dateRetrieved": metadata.dateRetrieved.map { Self.dateOnlyFormatter.string(from: $0) },
+            ]
         )
         return await makeWishListItem(from: response, listId: listId, userId: userId)
     }
@@ -202,13 +247,34 @@ public actor RemoteOurWishAPI: AuthStoreService, WishListStoreService, Collabora
         productName: String,
         price: Double,
         quantity: Int,
-        url: String?
+        url: String?,
+        metadata: WishListItemMetadata
     ) async throws {
         _ = userId
         try await requestNoContent(
             path: "/api/v1/items/\(itemId)",
             method: "PUT",
-            body: ["productName": productName, "price": price, "quantity": quantity, "url": url]
+            body: [
+                "productName": productName,
+                "category": metadata.category,
+                "manufacturer": metadata.manufacturer,
+                "price": price,
+                "msrp": metadata.msrp,
+                "quantity": quantity,
+                "url": url,
+                "officialProductURL": metadata.officialProductURL,
+                "bestRetailerURL": metadata.bestRetailerURL,
+                "primaryImageURL": metadata.primaryImageURL,
+                "itemDescription": metadata.itemDescription,
+                "specifications": metadata.specifications,
+                "weight": metadata.weight,
+                "caliber": metadata.caliber,
+                "compatibility": metadata.compatibility,
+                "purpose": metadata.purpose,
+                "notes": metadata.notes,
+                "availabilityStatus": metadata.availabilityStatus,
+                "dateRetrieved": metadata.dateRetrieved.map { Self.dateOnlyFormatter.string(from: $0) },
+            ]
         )
     }
 
@@ -420,6 +486,9 @@ public actor RemoteOurWishAPI: AuthStoreService, WishListStoreService, Collabora
 
     private func makeWishListItem(from item: RemoteItem, listId: Int64, userId: Int64) async -> WishListItem {
         let imageData = await loadImageData(from: item.imageURL)
+        let parsedDateRetrieved = item.dateRetrieved.flatMap {
+            Self.dateOnlyFormatter.date(from: $0) ?? ISO8601DateFormatter().date(from: $0)
+        }
         return WishListItem(
             id: item.id,
             userId: userId,
@@ -430,7 +499,24 @@ public actor RemoteOurWishAPI: AuthStoreService, WishListStoreService, Collabora
             url: item.url,
             isPurchased: item.isPurchased,
             isHidden: item.isHidden,
-            imageData: imageData
+            imageData: imageData,
+            metadata: WishListItemMetadata(
+                category: item.category,
+                manufacturer: item.manufacturer,
+                msrp: item.msrp,
+                officialProductURL: item.officialProductURL,
+                bestRetailerURL: item.bestRetailerURL,
+                primaryImageURL: item.primaryImageURL,
+                itemDescription: item.itemDescription,
+                specifications: item.specifications,
+                weight: item.weight,
+                caliber: item.caliber,
+                compatibility: item.compatibility,
+                purpose: item.purpose,
+                notes: item.notes,
+                availabilityStatus: item.availabilityStatus,
+                dateRetrieved: parsedDateRetrieved
+            )
         )
     }
 

@@ -8,7 +8,12 @@ import SwiftUI
 struct AddItemSheet: View {
     var onClose: () -> Void
     var onSubmit: (
-        _ productName: String, _ price: Double, _ quantity: Int, _ url: String?, _ imageData: Data?
+        _ productName: String,
+        _ price: Double,
+        _ quantity: Int,
+        _ url: String?,
+        _ imageData: Data?,
+        _ metadata: WishListItemMetadata
     ) async throws -> Void
 
     @State private var productName = ""
@@ -17,6 +22,22 @@ struct AddItemSheet: View {
     @State private var url = ""
     @State private var errorMessage: String?
     @State private var isSubmitting = false
+
+    @State private var category = ""
+    @State private var manufacturer = ""
+    @State private var msrp = ""
+    @State private var officialProductURL = ""
+    @State private var bestRetailerURL = ""
+    @State private var primaryImageURL = ""
+    @State private var itemDescription = ""
+    @State private var specifications = ""
+    @State private var weight = ""
+    @State private var caliber = ""
+    @State private var compatibility = ""
+    @State private var purpose = ""
+    @State private var notes = ""
+    @State private var availabilityStatus = ""
+    @State private var dateRetrieved = ""
     @FocusState private var productNameFocused: Bool
 
     @State private var fetchedImageData: Data?
@@ -51,6 +72,77 @@ struct AddItemSheet: View {
                 }
                 LabeledField("Product URL") {
                     TextField("Optional — we'll try to grab a photo", text: $url)
+                }
+
+                LabeledField("Category") {
+                    TextField("Rifle, Optic, Magazine...", text: $category)
+                }
+
+                LabeledField("Manufacturer") {
+                    TextField("Radian Weapons", text: $manufacturer)
+                }
+
+                HStack(spacing: 14) {
+                    LabeledField("MSRP") {
+                        TextField("Optional", text: $msrp)
+                    }
+                    LabeledField("Availability") {
+                        TextField("In Stock / Out of Stock / Backorder", text: $availabilityStatus)
+                    }
+                }
+
+                LabeledField("Purpose") {
+                    TextField("Home Defense, Hunting...", text: $purpose)
+                }
+
+                LabeledField("Official Product URL") {
+                    TextField("Optional", text: $officialProductURL)
+                }
+
+                LabeledField("Best Retailer URL") {
+                    TextField("Optional", text: $bestRetailerURL)
+                }
+
+                LabeledField("Primary Image URL") {
+                    TextField("Optional", text: $primaryImageURL)
+                }
+
+                LabeledField("Specifications") {
+                    TextEditor(text: $specifications)
+                        .frame(minHeight: 72)
+                        .padding(6)
+                        .background(.background, in: RoundedRectangle(cornerRadius: 8))
+                }
+
+                HStack(spacing: 14) {
+                    LabeledField("Weight") {
+                        TextField("Optional", text: $weight)
+                    }
+                    LabeledField("Caliber") {
+                        TextField("Optional", text: $caliber)
+                    }
+                }
+
+                LabeledField("Compatibility") {
+                    TextField("AR-15, M-LOK...", text: $compatibility)
+                }
+
+                LabeledField("Date Retrieved") {
+                    TextField("YYYY-MM-DD", text: $dateRetrieved)
+                }
+
+                LabeledField("Description") {
+                    TextEditor(text: $itemDescription)
+                        .frame(minHeight: 72)
+                        .padding(6)
+                        .background(.background, in: RoundedRectangle(cornerRadius: 8))
+                }
+
+                LabeledField("Notes") {
+                    TextEditor(text: $notes)
+                        .frame(minHeight: 72)
+                        .padding(6)
+                        .background(.background, in: RoundedRectangle(cornerRadius: 8))
                 }
 
                 imagePreview
@@ -140,16 +232,56 @@ struct AddItemSheet: View {
             errorMessage = "Product name, price, and quantity are required"
             return
         }
+        let parsedMsrp = msrp.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : Double(msrp)
+        if msrp.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false && parsedMsrp == nil {
+            errorMessage = "MSRP must be a valid number"
+            return
+        }
+
+        let trimmedDate = dateRetrieved.trimmingCharacters(in: .whitespacesAndNewlines)
+        let parsedDate: Date?
+        if trimmedDate.isEmpty {
+            parsedDate = nil
+        } else {
+            let formatter = DateFormatter()
+            formatter.calendar = Calendar(identifier: .iso8601)
+            formatter.locale = Locale(identifier: "en_US_POSIX")
+            formatter.timeZone = TimeZone(secondsFromGMT: 0)
+            formatter.dateFormat = "yyyy-MM-dd"
+            parsedDate = formatter.date(from: trimmedDate)
+            if parsedDate == nil {
+                errorMessage = "Date Retrieved must use YYYY-MM-DD"
+                return
+            }
+        }
 
         isSubmitting = true
         Task { @MainActor in
             do {
+                let metadata = WishListItemMetadata(
+                    category: category.trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty,
+                    manufacturer: manufacturer.trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty,
+                    msrp: parsedMsrp,
+                    officialProductURL: officialProductURL.trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty,
+                    bestRetailerURL: bestRetailerURL.trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty,
+                    primaryImageURL: primaryImageURL.trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty,
+                    itemDescription: itemDescription.trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty,
+                    specifications: specifications.trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty,
+                    weight: weight.trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty,
+                    caliber: caliber.trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty,
+                    compatibility: compatibility.trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty,
+                    purpose: purpose.trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty,
+                    notes: notes.trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty,
+                    availabilityStatus: availabilityStatus.trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty,
+                    dateRetrieved: parsedDate
+                )
                 try await onSubmit(
                     productName.trimmingCharacters(in: .whitespacesAndNewlines),
                     parsedPrice,
                     parsedQuantity,
                     url.isEmpty ? nil : url,
-                    fetchedImageData
+                    fetchedImageData,
+                    metadata
                 )
                 onClose()
             } catch {
@@ -157,6 +289,12 @@ struct AddItemSheet: View {
             }
             isSubmitting = false
         }
+    }
+}
+
+private extension String {
+    var nilIfEmpty: String? {
+        isEmpty ? nil : self
     }
 }
 

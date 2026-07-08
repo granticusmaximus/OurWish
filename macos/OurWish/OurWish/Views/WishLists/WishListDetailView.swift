@@ -50,10 +50,10 @@ struct WishListDetailView: View {
             }
         }
         .sheet(isPresented: $showAddItem) {
-            AddItemSheet(onClose: { showAddItem = false }) { name, price, quantity, url, imageData in
+            AddItemSheet(onClose: { showAddItem = false }) { name, price, quantity, url, imageData, metadata in
                 try await store.addItem(
                         productName: name, price: price, quantity: quantity, url: url,
-                        listId: list.id, imageData: imageData
+                        listId: list.id, imageData: imageData, metadata: metadata
                     )
             }
         }

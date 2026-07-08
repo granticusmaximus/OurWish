@@ -48,7 +48,7 @@ struct CollaborativeDetailView: View {
             }
         }
         .sheet(isPresented: $showAddItem) {
-            AddItemSheet(onClose: { showAddItem = false }) { name, price, quantity, url, imageData in
+            AddItemSheet(onClose: { showAddItem = false }) { name, price, quantity, url, imageData, _ in
                 try await store.addItem(
                     productName: name,
                     price: price,

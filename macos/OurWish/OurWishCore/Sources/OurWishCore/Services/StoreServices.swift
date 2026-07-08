@@ -29,7 +29,8 @@ public protocol WishListStoreService: Sendable {
         price: Double,
         quantity: Int,
         url: String?,
-        imageData: Data?
+        imageData: Data?,
+        metadata: WishListItemMetadata
     ) async throws -> WishListItem
     func updateWishListItem(
         itemId: Int64,
@@ -37,7 +38,8 @@ public protocol WishListStoreService: Sendable {
         productName: String,
         price: Double,
         quantity: Int,
-        url: String?
+        url: String?,
+        metadata: WishListItemMetadata
     ) async throws
     func setWishListItemPurchased(itemId: Int64, userId: Int64, isPurchased: Bool) async throws
     func setWishListItemHidden(itemId: Int64, userId: Int64, isHidden: Bool) async throws

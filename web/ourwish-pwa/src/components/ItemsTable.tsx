@@ -6,9 +6,24 @@ import { ApiError } from '../api/client'
 
 interface ItemInput {
   productName: string
+  category?: string | null
+  manufacturer?: string | null
   price: number
+  msrp?: number | null
   quantity: number
   url: string | null
+  officialProductURL?: string | null
+  bestRetailerURL?: string | null
+  primaryImageURL?: string | null
+  itemDescription?: string | null
+  specifications?: string | null
+  weight?: string | null
+  caliber?: string | null
+  compatibility?: string | null
+  purpose?: string | null
+  notes?: string | null
+  availabilityStatus?: string | null
+  dateRetrieved?: string | null
 }
 
 interface ItemsTableProps {
@@ -41,7 +56,7 @@ function draftFrom(item: Item): Draft {
   }
 }
 
-function parsedDraft(draft: Draft): ItemInput | null {
+function parsedDraft(draft: Draft, existingItem: Item): ItemInput | null {
   const price = Number(draft.price)
   const quantity = Number(draft.quantity)
   if (!draft.productName.trim() || Number.isNaN(price) || !Number.isInteger(quantity) || quantity < 1) {
@@ -49,9 +64,24 @@ function parsedDraft(draft: Draft): ItemInput | null {
   }
   return {
     productName: draft.productName.trim(),
+    category: existingItem.category,
+    manufacturer: existingItem.manufacturer,
     price,
+    msrp: existingItem.msrp,
     quantity,
     url: draft.url.trim() ? draft.url.trim() : null,
+    officialProductURL: existingItem.officialProductURL,
+    bestRetailerURL: existingItem.bestRetailerURL,
+    primaryImageURL: existingItem.primaryImageURL,
+    itemDescription: existingItem.itemDescription,
+    specifications: existingItem.specifications,
+    weight: existingItem.weight,
+    caliber: existingItem.caliber,
+    compatibility: existingItem.compatibility,
+    purpose: existingItem.purpose,
+    notes: existingItem.notes,
+    availabilityStatus: existingItem.availabilityStatus,
+    dateRetrieved: existingItem.dateRetrieved,
   }
 }
 
@@ -99,14 +129,14 @@ export function ItemsTable({
     }
   }
 
-  const saveEdit = async (id: number) => {
-    const parsed = parsedDraft(draft)
+  const saveEdit = async (item: Item) => {
+    const parsed = parsedDraft(draft, item)
     if (!parsed) {
       setErrorMessage('Please enter a valid product name, price, and quantity')
       return
     }
     await runAction(async () => {
-      await onSave(id, parsed)
+      await onSave(item.id, parsed)
       setEditingId(null)
     })
   }
@@ -199,7 +229,7 @@ export function ItemsTable({
           <div className="item-actions">
             {isEditing ? (
               <>
-                <button type="button" className="btn" onClick={() => saveEdit(item.id)}>
+                <button type="button" className="btn" onClick={() => saveEdit(item)}>
                   Save
                 </button>
                 <button type="button" className="btn" onClick={() => setEditingId(null)}>

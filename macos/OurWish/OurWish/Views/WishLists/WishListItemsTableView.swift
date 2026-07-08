@@ -22,7 +22,17 @@ struct WishListItemsTableView: View {
                 purchasedItems: store.purchasedItems.map(ItemRow.init),
                 config: ItemsTableConfig(showURLColumn: true, allowHideToggle: true, allowRename: true),
                 onSave: { id, name, price, quantity, url in
-                    run { try await store.updateItem(id, productName: name, price: price, quantity: quantity, url: url) }
+                    let metadata = store.items.first(where: { $0.id == id })?.metadata ?? .empty
+                    run {
+                        try await store.updateItem(
+                            id,
+                            productName: name,
+                            price: price,
+                            quantity: quantity,
+                            url: url,
+                            metadata: metadata
+                        )
+                    }
                 },
                 onTogglePurchased: { id, isPurchased in
                     run { try await store.setPurchased(id, isPurchased: isPurchased) }
