@@ -12,12 +12,18 @@ public enum RepositoryError: LocalizedError, Equatable {
     case collaborativeListNotFound
     case partnerNotFound
     case cannotCollaborateWithSelf
+    case incorrectCurrentPassword
+    case userNotFound
     case invalidInput(String)
 
     public var errorDescription: String? {
         switch self {
         case .invalidCredentials:
             return "Invalid email or password"
+        case .incorrectCurrentPassword:
+            return "Current password is incorrect"
+        case .userNotFound:
+            return "User not found"
         case .emailAlreadyExists:
             return "Email already exists"
         case .userLimitReached(let max):

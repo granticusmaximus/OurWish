@@ -1,3 +1,4 @@
+import AppKit
 import OurWishCore
 import SwiftUI
 
@@ -14,6 +15,7 @@ struct MainWindowView: View {
     @State private var activeSection: SidebarSection = .wishLists
     @State private var showCreateWishList = false
     @State private var showCreateCollaborativeList = false
+    @State private var showProfile = false
 
     var body: some View {
         NavigationSplitView {
@@ -41,11 +43,12 @@ struct MainWindowView: View {
             }
             ToolbarItem(placement: .primaryAction) {
                 Menu {
+                    Button("Edit Profile…") { showProfile = true }
                     Button("Create New User…", action: onCreateNewUser)
                     Divider()
                     Button("Log Out", role: .destructive) { authStore.logout() }
                 } label: {
-                    Label(authStore.currentUser?.displayName ?? "Account", systemImage: "person.crop.circle.fill")
+                    AccountMenuLabel(user: authStore.currentUser)
                 }
             }
         }
@@ -60,6 +63,9 @@ struct MainWindowView: View {
                 try collaborativeStore.createList(partnerEmail: email, name: name)
                 activeSection = .collaborative
             }
+        }
+        .sheet(isPresented: $showProfile) {
+            ProfileView()
         }
     }
 
@@ -143,6 +149,27 @@ struct MainWindowView: View {
                     description: Text("Create a collaborative list to share with your partner.")
                 )
             }
+        }
+    }
+}
+
+/// The account menu's toolbar label — shows the user's profile photo as a small
+/// circular thumbnail when they've set one, falling back to a generic SF Symbol.
+private struct AccountMenuLabel: View {
+    let user: User?
+
+    var body: some View {
+        HStack(spacing: 6) {
+            if let data = user?.profileImageData, let nsImage = NSImage(data: data) {
+                Image(nsImage: nsImage)
+                    .resizable()
+                    .scaledToFill()
+                    .frame(width: 20, height: 20)
+                    .clipShape(Circle())
+            } else {
+                Image(systemName: "person.crop.circle.fill")
+            }
+            Text(user?.displayName ?? "Account")
         }
     }
 }

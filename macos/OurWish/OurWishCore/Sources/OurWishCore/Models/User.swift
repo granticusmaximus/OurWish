@@ -9,6 +9,8 @@ public struct User: Codable, Identifiable, Equatable, Sendable {
     public var email: String
     public var passwordHash: String
     public var wishListName: String
+    public var bio: String?
+    public var profileImageData: Data?
     public var createdAt: Date
 
     public init(
@@ -19,6 +21,8 @@ public struct User: Codable, Identifiable, Equatable, Sendable {
         email: String,
         passwordHash: String,
         wishListName: String = "My Wish List",
+        bio: String? = nil,
+        profileImageData: Data? = nil,
         createdAt: Date = Date()
     ) {
         self.id = id
@@ -28,6 +32,8 @@ public struct User: Codable, Identifiable, Equatable, Sendable {
         self.email = email
         self.passwordHash = passwordHash
         self.wishListName = wishListName
+        self.bio = bio
+        self.profileImageData = profileImageData
         self.createdAt = createdAt
     }
 }
@@ -41,6 +47,8 @@ extension User {
         case email
         case passwordHash = "password_hash"
         case wishListName = "wish_list_name"
+        case bio
+        case profileImageData = "profile_image_data"
         case createdAt = "created_at"
     }
 }

@@ -130,7 +130,7 @@ public final class CollaborativeStore {
 
         listsCancellable = observation.start(
             in: dbWriter,
-            scheduling: .async(onQueue: .main),
+            scheduling: .mainActor,
             onError: { [weak self] error in
                 self?.lastError = error.localizedDescription
             },
@@ -163,7 +163,7 @@ public final class CollaborativeStore {
         }
         itemsCancellable = itemsObservation.start(
             in: dbWriter,
-            scheduling: .async(onQueue: .main),
+            scheduling: .mainActor,
             onError: { [weak self] error in
                 self?.lastError = error.localizedDescription
             },
@@ -181,7 +181,7 @@ public final class CollaborativeStore {
         }
         purchasedCancellable = purchasedObservation.start(
             in: dbWriter,
-            scheduling: .async(onQueue: .main),
+            scheduling: .mainActor,
             onError: { [weak self] error in
                 self?.lastError = error.localizedDescription
             },

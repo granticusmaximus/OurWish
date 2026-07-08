@@ -84,4 +84,57 @@ public final class UserRepository: Sendable {
     public func user(id: Int64) throws -> User? {
         try dbWriter.read { db in try User.fetchOne(db, key: id) }
     }
+
+    @discardableResult
+    public func updateProfile(
+        userId: Int64,
+        firstName: String,
+        lastName: String,
+        displayName: String,
+        bio: String?,
+        profileImageData: Data?
+    ) throws -> User {
+        let trimmedFirstName = firstName.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedLastName = lastName.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedDisplayName = displayName.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedBio = bio?.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        guard !trimmedFirstName.isEmpty, !trimmedLastName.isEmpty, !trimmedDisplayName.isEmpty else {
+            throw RepositoryError.invalidInput("First name, last name, and display name are required")
+        }
+
+        return try dbWriter.write { db in
+            guard var user = try User.fetchOne(db, key: userId) else {
+                throw RepositoryError.userNotFound
+            }
+
+            user.firstName = trimmedFirstName
+            user.lastName = trimmedLastName
+            user.displayName = trimmedDisplayName
+            user.bio = (trimmedBio?.isEmpty ?? true) ? nil : trimmedBio
+            user.profileImageData = profileImageData
+            try user.update(db)
+
+            return user
+        }
+    }
+
+    public func updatePassword(userId: Int64, currentPassword: String, newPassword: String) throws {
+        guard !newPassword.isEmpty else {
+            throw RepositoryError.invalidInput("New password is required")
+        }
+
+        try dbWriter.write { db in
+            guard var user = try User.fetchOne(db, key: userId) else {
+                throw RepositoryError.userNotFound
+            }
+
+            guard PasswordHasher.verify(currentPassword, against: user.passwordHash) else {
+                throw RepositoryError.incorrectCurrentPassword
+            }
+
+            user.passwordHash = PasswordHasher.hash(newPassword)
+            try user.update(db)
+        }
+    }
 }

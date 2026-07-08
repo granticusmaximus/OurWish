@@ -95,6 +95,38 @@ do {
     check("seeding twice does not duplicate the user", usersAfterReseed.count == 1)
 }
 
+// Anyone who already launched the app before this feature has a v1-only database on
+// disk. Confirm the v2 migration adds the new columns to that existing data in place,
+// without touching (or requiring) any existing rows.
+section("Migration upgrade path (v1 -> v2)")
+do {
+    let dbQueue = try DatabaseQueue()
+    try AppDatabase.migrator.migrate(dbQueue, upTo: "v1CreateSchema")
+
+    try dbQueue.write { db in
+        try db.execute(
+            sql: """
+                INSERT INTO users (first_name, last_name, display_name, email, password_hash)
+                VALUES (?, ?, ?, ?, ?)
+                """,
+            arguments: ["Pat", "Nguyen", "Pat", "pat@example.com", PasswordHasher.hash("secret123")]
+        )
+    }
+
+    let columnsBeforeUpgrade = try dbQueue.read { db in
+        try Row.fetchAll(db, sql: "PRAGMA table_info(users)").map { $0["name"] as String }
+    }
+    check("v1-only schema has no bio column yet", !columnsBeforeUpgrade.contains("bio"))
+
+    try AppDatabase.migrator.migrate(dbQueue)
+
+    let usersAfterUpgrade = try dbQueue.read { try User.fetchAll($0) }
+    check("existing user survives the v1 -> v2 upgrade", usersAfterUpgrade.count == 1)
+    check("existing user's email is untouched", usersAfterUpgrade.first?.email == "pat@example.com")
+    check("existing user's new bio column defaults to nil", usersAfterUpgrade.first?.bio == nil)
+    check("existing user's new profile image column defaults to nil", usersAfterUpgrade.first?.profileImageData == nil)
+}
+
 // MARK: - UserRepository
 
 section("UserRepository")
@@ -147,6 +179,43 @@ do {
     let repo = UserRepository(dbWriter: dbQueue)
     let partners = try repo.partners(excluding: userA.id!)
     check("partners excludes self", partners.map(\.email) == ["b@example.com"])
+}
+
+do {
+    let dbQueue = try freshDatabase()
+    let user = try insertUser(dbQueue, firstName: "Jamie", email: "a@example.com", password: "secret123")
+    let repo = UserRepository(dbWriter: dbQueue)
+    let imageData = Data([0xFF, 0xD8, 0xFF, 0xD9])
+
+    let updated = try repo.updateProfile(
+        userId: user.id!, firstName: "Jamie", lastName: "Rivera", displayName: "Jam",
+        bio: "Loves board games", profileImageData: imageData
+    )
+    check("updateProfile updates display name", updated.displayName == "Jam")
+    check("updateProfile updates last name", updated.lastName == "Rivera")
+    check("updateProfile updates bio", updated.bio == "Loves board games")
+    check("updateProfile stores image data", updated.profileImageData == imageData)
+
+    let reloaded = try repo.user(id: user.id!)
+    try check("updateProfile persists to the database", reloaded?.displayName == "Jam")
+
+    checkThrows("updateProfile rejects blank display name", expected: .invalidInput("First name, last name, and display name are required")) {
+        try repo.updateProfile(userId: user.id!, firstName: "Jamie", lastName: "Rivera", displayName: "  ", bio: nil, profileImageData: nil)
+    }
+}
+
+do {
+    let dbQueue = try freshDatabase()
+    let user = try insertUser(dbQueue, email: "a@example.com", password: "secret123")
+    let repo = UserRepository(dbWriter: dbQueue)
+
+    try repo.updatePassword(userId: user.id!, currentPassword: "secret123", newPassword: "newpass456")
+    try check("changed password verifies", repo.user(id: user.id!).map { PasswordHasher.verify("newpass456", against: $0.passwordHash) } ?? false)
+    try check("old password no longer works", !(repo.user(id: user.id!).map { PasswordHasher.verify("secret123", against: $0.passwordHash) } ?? true))
+
+    checkThrows("updatePassword rejects wrong current password", expected: .incorrectCurrentPassword) {
+        try repo.updatePassword(userId: user.id!, currentPassword: "wrong-current", newPassword: "whatever123")
+    }
 }
 
 // MARK: - WishListRepository

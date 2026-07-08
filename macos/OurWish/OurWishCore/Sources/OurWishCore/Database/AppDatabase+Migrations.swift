@@ -67,6 +67,17 @@ extension AppDatabase {
             }
         }
 
+        // Adds user profile fields (bio, profile picture) on top of the v1 schema.
+        // A separate migration rather than folding into v1CreateSchema, since anyone
+        // who already launched the app has a v1 database that needs to gain these
+        // columns in place rather than being recreated from scratch.
+        migrator.registerMigration("v2AddUserProfileFields") { db in
+            try db.alter(table: "users") { t in
+                t.add(column: "bio", .text)
+                t.add(column: "profile_image_data", .blob)
+            }
+        }
+
         return migrator
     }
 }

@@ -124,7 +124,7 @@ public final class WishListStore {
 
         listsCancellable = observation.start(
             in: dbWriter,
-            scheduling: .async(onQueue: .main),
+            scheduling: .mainActor,
             onError: { [weak self] error in
                 self?.lastError = error.localizedDescription
             },
@@ -158,7 +158,7 @@ public final class WishListStore {
         }
         itemsCancellable = itemsObservation.start(
             in: dbWriter,
-            scheduling: .async(onQueue: .main),
+            scheduling: .mainActor,
             onError: { [weak self] error in
                 self?.lastError = error.localizedDescription
             },
@@ -177,7 +177,7 @@ public final class WishListStore {
         }
         purchasedCancellable = purchasedObservation.start(
             in: dbWriter,
-            scheduling: .async(onQueue: .main),
+            scheduling: .mainActor,
             onError: { [weak self] error in
                 self?.lastError = error.localizedDescription
             },

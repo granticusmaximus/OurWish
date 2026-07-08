@@ -20,7 +20,7 @@ struct RegisterView: View {
     var body: some View {
         ZStack {
             LinearGradient(
-                colors: [Color.accentColor.opacity(0.18), Color.accentColor.opacity(0.04)],
+                colors: [BrandColor.gradientStart.opacity(0.18), BrandColor.gradientEnd.opacity(0.08)],
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
             )

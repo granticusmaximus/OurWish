@@ -18,7 +18,7 @@ struct LoginView: View {
     var body: some View {
         ZStack {
             LinearGradient(
-                colors: [Color.accentColor.opacity(0.18), Color.accentColor.opacity(0.04)],
+                colors: [BrandColor.gradientStart.opacity(0.18), BrandColor.gradientEnd.opacity(0.08)],
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
             )
@@ -82,24 +82,21 @@ struct LoginView: View {
     }
 }
 
-/// The app's brand mark — a simple glyph so the login/register screens don't feel bare
-/// while a real app icon is designed.
+/// The app's brand mark — mirrors the generated app icon's gradient + glyph
+/// (`Assets.xcassets/AppIcon.appiconset`) exactly, drawn in SwiftUI so it stays crisp
+/// at any size instead of embedding a raster image.
 struct AppGlyph: View {
+    var size: CGFloat = 72
+
     var body: some View {
         ZStack {
-            RoundedRectangle(cornerRadius: 22, style: .continuous)
-                .fill(
-                    LinearGradient(
-                        colors: [Color.accentColor, Color.accentColor.opacity(0.7)],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                )
-                .frame(width: 72, height: 72)
-                .shadow(color: Color.accentColor.opacity(0.35), radius: 12, y: 6)
+            RoundedRectangle(cornerRadius: size * 0.306, style: .continuous)
+                .fill(BrandColor.gradient)
+                .frame(width: size, height: size)
+                .shadow(color: BrandColor.gradientEnd.opacity(0.35), radius: size * 0.167, y: size * 0.083)
 
             Image(systemName: "gift.fill")
-                .font(.system(size: 32, weight: .medium))
+                .font(.system(size: size * 0.44, weight: .semibold))
                 .foregroundStyle(.white)
         }
     }

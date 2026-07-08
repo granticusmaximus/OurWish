@@ -46,4 +46,29 @@ public final class AuthStore {
         try userRepository.createUser(firstName: firstName, lastName: lastName, email: email, password: password)
         refreshUserCount()
     }
+
+    /// Updates the logged-in user's profile and refreshes `currentUser` so the UI
+    /// (toolbar avatar, welcome text, etc.) reflects the change immediately.
+    public func updateProfile(
+        firstName: String,
+        lastName: String,
+        displayName: String,
+        bio: String?,
+        profileImageData: Data?
+    ) throws {
+        guard let userId = currentUser?.id else { return }
+        currentUser = try userRepository.updateProfile(
+            userId: userId,
+            firstName: firstName,
+            lastName: lastName,
+            displayName: displayName,
+            bio: bio,
+            profileImageData: profileImageData
+        )
+    }
+
+    public func changePassword(currentPassword: String, newPassword: String) throws {
+        guard let userId = currentUser?.id else { return }
+        try userRepository.updatePassword(userId: userId, currentPassword: currentPassword, newPassword: newPassword)
+    }
 }
