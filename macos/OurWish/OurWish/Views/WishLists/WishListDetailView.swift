@@ -51,12 +51,10 @@ struct WishListDetailView: View {
         }
         .sheet(isPresented: $showAddItem) {
             AddItemSheet { name, price, quantity, url, imageData in
-                run {
-                    try store.addItem(
+                try await store.addItem(
                         productName: name, price: price, quantity: quantity, url: url,
                         listId: list.id, imageData: imageData
                     )
-                }
             }
         }
         .confirmationDialog(
@@ -66,7 +64,7 @@ struct WishListDetailView: View {
         ) {
             Button("Delete List", role: .destructive) {
                 guard let id = list.id else { return }
-                run { try store.deleteList(id) }
+                run { try await store.deleteList(id) }
             }
             Button("Cancel", role: .cancel) {}
         } message: {
@@ -74,12 +72,14 @@ struct WishListDetailView: View {
         }
     }
 
-    private func run(_ operation: () throws -> Void) {
-        do {
-            try operation()
-            errorMessage = nil
-        } catch {
-            errorMessage = error.localizedDescription
+    private func run(_ operation: @escaping () async throws -> Void) {
+        Task { @MainActor in
+            do {
+                try await operation()
+                errorMessage = nil
+            } catch {
+                errorMessage = error.localizedDescription
+            }
         }
     }
 }

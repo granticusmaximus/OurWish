@@ -72,13 +72,15 @@ struct LoginView: View {
 
     private func login() {
         isLoggingIn = true
-        do {
-            try authStore.login(email: email, password: password)
-            errorMessage = nil
-        } catch {
-            errorMessage = error.localizedDescription
+        Task { @MainActor in
+            do {
+                try await authStore.login(email: email, password: password)
+                errorMessage = nil
+            } catch {
+                errorMessage = error.localizedDescription
+            }
+            isLoggingIn = false
         }
-        isLoggingIn = false
     }
 }
 

@@ -19,12 +19,13 @@ struct AuthMiddleware: RouterMiddleware {
         }
 
         let token = String(authHeader.dropFirst("Bearer ".count))
-        guard let userId = await tokenStore.userId(for: token) else {
+        guard let userId = try await tokenStore.userId(for: token) else {
             throw HTTPError(.unauthorized, message: "Invalid or expired session")
         }
 
         var context = context
         context.userId = userId
+        context.authToken = token
         return try await next(request, context)
     }
 }

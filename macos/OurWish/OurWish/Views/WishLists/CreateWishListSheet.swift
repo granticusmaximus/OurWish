@@ -2,7 +2,7 @@ import SwiftUI
 
 /// Replaces the "Create New Wish List" `<Modal>` in `App.tsx`.
 struct CreateWishListSheet: View {
-    var onCreate: (String) throws -> Void
+    var onCreate: (String) async throws -> Void
 
     @Environment(\.dismiss) private var dismiss
     @State private var name = ""
@@ -52,12 +52,14 @@ struct CreateWishListSheet: View {
         }
 
         isSubmitting = true
-        do {
-            try onCreate(trimmed)
-            dismiss()
-        } catch {
-            errorMessage = error.localizedDescription
+        Task { @MainActor in
+            do {
+                try await onCreate(trimmed)
+                dismiss()
+            } catch {
+                errorMessage = error.localizedDescription
+            }
+            isSubmitting = false
         }
-        isSubmitting = false
     }
 }

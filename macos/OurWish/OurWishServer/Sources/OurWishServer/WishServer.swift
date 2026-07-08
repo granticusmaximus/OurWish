@@ -17,7 +17,7 @@ public struct WishServer: Sendable {
     }
 
     public func run(port: Int = WishServer.defaultPort) async throws {
-        let tokenStore = TokenStore()
+        let tokenStore = TokenStore(dbWriter: dbWriter)
         let userRepository = UserRepository(dbWriter: dbWriter)
         let wishListRepository = WishListRepository(dbWriter: dbWriter)
         let authMiddleware = AuthMiddleware(tokenStore: tokenStore)

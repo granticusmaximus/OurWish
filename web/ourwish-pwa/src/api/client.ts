@@ -8,6 +8,7 @@ import type {
   User,
   WishList,
 } from './types'
+import { buildAPIURL, resolveAPIAssetURL } from './config'
 
 const TOKEN_KEY = 'ourwish_token'
 
@@ -40,7 +41,7 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
     headers.set('Authorization', `Bearer ${token}`)
   }
 
-  const response = await fetch(path, { ...options, headers })
+  const response = await fetch(buildAPIURL(path), { ...options, headers })
 
   if (!response.ok) {
     let message = `Request failed (${response.status})`
@@ -75,20 +76,45 @@ interface UpdateProfileInput {
   imageBase64: string | null
 }
 
+function withResolvedUserImage(user: User): User {
+  return {
+    ...user,
+    imageURL: resolveAPIAssetURL(user.imageURL),
+  }
+}
+
+function withResolvedItemImage(item: Item): Item {
+  return {
+    ...item,
+    imageURL: resolveAPIAssetURL(item.imageURL),
+  }
+}
+
+function withResolvedItemsResponse(response: ItemsResponse): ItemsResponse {
+  return {
+    active: response.active.map(withResolvedItemImage),
+    purchased: response.purchased.map(withResolvedItemImage),
+  }
+}
+
 export const api = {
   login: (email: string, password: string) =>
     request<LoginResponse>('/api/v1/auth/login', {
       method: 'POST',
       body: JSON.stringify({ email, password }),
-    }),
-  me: () => request<User>('/api/v1/auth/me'),
+    }).then((response) => ({
+      ...response,
+      user: withResolvedUserImage(response.user),
+    })),
+  logout: () => request<void>('/api/v1/auth/logout', { method: 'POST' }),
+  me: () => request<User>('/api/v1/auth/me').then(withResolvedUserImage),
   register: (firstName: string, lastName: string, email: string, password: string) =>
     request<User>('/api/v1/auth/register', {
       method: 'POST',
       body: JSON.stringify({ firstName, lastName, email, password }),
-    }),
+    }).then(withResolvedUserImage),
   updateProfile: (input: UpdateProfileInput) =>
-    request<User>('/api/v1/auth/profile', { method: 'PUT', body: JSON.stringify(input) }),
+    request<User>('/api/v1/auth/profile', { method: 'PUT', body: JSON.stringify(input) }).then(withResolvedUserImage),
   changePassword: (currentPassword: string, newPassword: string) =>
     request<void>('/api/v1/auth/password', {
       method: 'PUT',
@@ -101,9 +127,9 @@ export const api = {
   renameWishList: (id: number, name: string) =>
     request<void>(`/api/v1/wishlists/${id}`, { method: 'PUT', body: JSON.stringify({ name }) }),
   deleteWishList: (id: number) => request<void>(`/api/v1/wishlists/${id}`, { method: 'DELETE' }),
-  wishListItems: (id: number) => request<ItemsResponse>(`/api/v1/wishlists/${id}/items`),
+  wishListItems: (id: number) => request<ItemsResponse>(`/api/v1/wishlists/${id}/items`).then(withResolvedItemsResponse),
   addWishListItem: (id: number, input: ItemInput) =>
-    request<Item>(`/api/v1/wishlists/${id}/items`, { method: 'POST', body: JSON.stringify(input) }),
+    request<Item>(`/api/v1/wishlists/${id}/items`, { method: 'POST', body: JSON.stringify(input) }).then(withResolvedItemImage),
   updateItem: (id: number, input: ItemInput) =>
     request<void>(`/api/v1/items/${id}`, { method: 'PUT', body: JSON.stringify(input) }),
   setItemPurchased: (id: number, isPurchased: boolean) =>
@@ -122,12 +148,12 @@ export const api = {
   deleteCollaborativeList: (id: number) =>
     request<void>(`/api/v1/collaborative/lists/${id}`, { method: 'DELETE' }),
   collaborativeItems: (listId: number) =>
-    request<ItemsResponse>(`/api/v1/collaborative/lists/${listId}/items`),
+    request<ItemsResponse>(`/api/v1/collaborative/lists/${listId}/items`).then(withResolvedItemsResponse),
   addCollaborativeItem: (listId: number, input: ItemInput) =>
     request<Item>(`/api/v1/collaborative/lists/${listId}/items`, {
       method: 'POST',
       body: JSON.stringify(input),
-    }),
+    }).then(withResolvedItemImage),
   updateCollaborativeItem: (listId: number, itemId: number, input: ItemInput) =>
     request<void>(`/api/v1/collaborative/lists/${listId}/items/${itemId}`, {
       method: 'PUT',

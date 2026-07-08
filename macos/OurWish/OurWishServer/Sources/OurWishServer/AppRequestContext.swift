@@ -5,9 +5,11 @@ import Hummingbird
 struct AppRequestContext: RequestContext {
     var coreContext: CoreRequestContextStorage
     var userId: Int64?
+    var authToken: String?
 
     init(source: Source) {
         self.coreContext = .init(source: source)
         self.userId = nil
+        self.authToken = nil
     }
 }

@@ -2,6 +2,8 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 
+const apiProxyTarget = process.env.VITE_DEV_API_PROXY_TARGET || 'http://localhost:8420'
+
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [
@@ -30,7 +32,7 @@ export default defineConfig({
       // production the server serves the built app itself, same-origin, no proxy
       // needed.
       '/api': {
-        target: 'http://localhost:8420',
+        target: apiProxyTarget,
         changeOrigin: true,
       },
     },

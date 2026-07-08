@@ -32,6 +32,10 @@ struct LoginResponseDTO: Codable, ResponseEncodable {
     let user: UserDTO
 }
 
+struct UserCountDTO: Codable, ResponseEncodable {
+    let count: Int
+}
+
 struct WishListDTO: Codable, ResponseEncodable {
     let id: Int64
     let name: String

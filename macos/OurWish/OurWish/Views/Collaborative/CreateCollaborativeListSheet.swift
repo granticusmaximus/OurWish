@@ -4,7 +4,7 @@ import SwiftUI
 /// Replaces the create `<Modal>` in `CollaborativeLists.tsx`.
 struct CreateCollaborativeListSheet: View {
     let partners: [User]
-    var onCreate: (_ partnerEmail: String, _ name: String) throws -> Void
+    var onCreate: (_ partnerEmail: String, _ name: String) async throws -> Void
 
     @Environment(\.dismiss) private var dismiss
     @State private var partnerEmail = ""
@@ -64,12 +64,14 @@ struct CreateCollaborativeListSheet: View {
 
     private func submit() {
         isSubmitting = true
-        do {
-            try onCreate(partnerEmail, listName.trimmingCharacters(in: .whitespacesAndNewlines))
-            dismiss()
-        } catch {
-            errorMessage = error.localizedDescription
+        Task { @MainActor in
+            do {
+                try await onCreate(partnerEmail, listName.trimmingCharacters(in: .whitespacesAndNewlines))
+                dismiss()
+            } catch {
+                errorMessage = error.localizedDescription
+            }
+            isSubmitting = false
         }
-        isSubmitting = false
     }
 }

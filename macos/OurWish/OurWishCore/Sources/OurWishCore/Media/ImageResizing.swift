@@ -1,5 +1,8 @@
-import AppKit
 import Foundation
+
+#if canImport(AppKit)
+import AppKit
+#endif
 
 /// Downscales and JPEG-compresses an image before it's stored as a BLOB (profile
 /// photos on `users`, product photos on items) — keeps the database small regardless
@@ -12,8 +15,13 @@ public enum ImageResizing {
         maxDimension: CGFloat = 256,
         compressionQuality: CGFloat = 0.85
     ) -> Data? {
+#if canImport(AppKit)
         guard let image = NSImage(contentsOf: url) else { return nil }
         return resizedJPEGData(from: image, maxDimension: maxDimension, compressionQuality: compressionQuality)
+#else
+        guard let data = try? Data(contentsOf: url) else { return nil }
+        return resizedJPEGData(from: data, maxDimension: maxDimension, compressionQuality: compressionQuality)
+#endif
     }
 
     public static func resizedJPEGData(
@@ -21,10 +29,15 @@ public enum ImageResizing {
         maxDimension: CGFloat = 256,
         compressionQuality: CGFloat = 0.85
     ) -> Data? {
+#if canImport(AppKit)
         guard let image = NSImage(data: data) else { return nil }
         return resizedJPEGData(from: image, maxDimension: maxDimension, compressionQuality: compressionQuality)
+#else
+        return data
+#endif
     }
 
+#if canImport(AppKit)
     public static func resizedJPEGData(
         from image: NSImage,
         maxDimension: CGFloat = 256,
@@ -54,4 +67,5 @@ public enum ImageResizing {
 
         return bitmap.representation(using: .jpeg, properties: [.compressionFactor: compressionQuality])
     }
+#endif
 }

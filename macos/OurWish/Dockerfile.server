@@ -1,0 +1,18 @@
+FROM swift:6.0-jammy AS build
+
+WORKDIR /app
+COPY OurWishCore ./OurWishCore
+COPY OurWishServer ./OurWishServer
+
+WORKDIR /app/OurWishServer
+RUN swift build -c release --product RunServer
+
+FROM swift:6.0-jammy
+
+WORKDIR /app
+COPY --from=build /app/OurWishServer/.build/release/RunServer /app/RunServer
+
+ENV OURWISH_PORT=8420
+EXPOSE 8420
+
+CMD ["/app/RunServer"]

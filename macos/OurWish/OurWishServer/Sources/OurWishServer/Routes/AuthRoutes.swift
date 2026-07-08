@@ -40,7 +40,7 @@ struct AuthRoutes {
             let body = try await request.decode(as: LoginRequest.self, context: context)
             do {
                 let user = try userRepository.login(email: body.email, password: body.password)
-                let token = await tokenStore.issueToken(for: user.id!)
+                let token = try await tokenStore.issueToken(for: user.id!)
                 return LoginResponseDTO(token: token, user: UserDTO(user))
             } catch let error as RepositoryError {
                 throw error.httpError
@@ -49,6 +49,14 @@ struct AuthRoutes {
     }
 
     func addProtectedRoutes(to group: RouterGroup<AppRequestContext>) {
+        group.get("/user-count") { _, _ -> UserCountDTO in
+            do {
+                return UserCountDTO(count: try userRepository.count())
+            } catch let error as RepositoryError {
+                throw error.httpError
+            }
+        }
+
         group.get("/me") { _, context -> UserDTO in
             guard let userId = context.userId, let user = try userRepository.user(id: userId) else {
                 throw HTTPError(.unauthorized)
@@ -105,6 +113,12 @@ struct AuthRoutes {
             } catch let error as RepositoryError {
                 throw error.httpError
             }
+        }
+
+        group.post("/logout") { _, context -> HTTPResponse.Status in
+            guard let authToken = context.authToken else { throw HTTPError(.unauthorized) }
+            try await tokenStore.revoke(authToken)
+            return .noContent
         }
 
     }

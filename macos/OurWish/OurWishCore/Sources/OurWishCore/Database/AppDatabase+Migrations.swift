@@ -89,6 +89,17 @@ extension AppDatabase {
             }
         }
 
+        // Persists bearer tokens so a standalone backend process can restart without
+        // invalidating every logged-in client immediately.
+        migrator.registerMigration("v4AddAuthTokens") { db in
+            try db.create(table: "auth_tokens", ifNotExists: true) { t in
+                t.column("token", .text).notNull().primaryKey()
+                t.column("user_id", .integer).notNull().indexed()
+                    .references("users", onDelete: .cascade)
+                t.column("created_at", .datetime).notNull().defaults(sql: "CURRENT_TIMESTAMP")
+            }
+        }
+
         return migrator
     }
 }

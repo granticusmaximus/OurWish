@@ -8,7 +8,7 @@ import SwiftUI
 struct AddItemSheet: View {
     var onSubmit: (
         _ productName: String, _ price: Double, _ quantity: Int, _ url: String?, _ imageData: Data?
-    ) -> Void
+    ) async throws -> Void
 
     @Environment(\.dismiss) private var dismiss
     @State private var productName = ""
@@ -16,6 +16,7 @@ struct AddItemSheet: View {
     @State private var quantity = "1"
     @State private var url = ""
     @State private var errorMessage: String?
+    @State private var isSubmitting = false
     @FocusState private var productNameFocused: Bool
 
     @State private var fetchedImageData: Data?
@@ -59,10 +60,11 @@ struct AddItemSheet: View {
             HStack {
                 Spacer()
                 Button("Cancel") { dismiss() }
+                    .disabled(isSubmitting)
                 Button("Add to List", action: submit)
                     .keyboardShortcut(.defaultAction)
                     .buttonStyle(.borderedProminent)
-                    .disabled(!isValid)
+                    .disabled(isSubmitting || !isValid)
             }
         }
         .padding(24)
@@ -139,14 +141,22 @@ struct AddItemSheet: View {
             return
         }
 
-        onSubmit(
-            productName.trimmingCharacters(in: .whitespacesAndNewlines),
-            parsedPrice,
-            parsedQuantity,
-            url.isEmpty ? nil : url,
-            fetchedImageData
-        )
-        dismiss()
+        isSubmitting = true
+        Task { @MainActor in
+            do {
+                try await onSubmit(
+                    productName.trimmingCharacters(in: .whitespacesAndNewlines),
+                    parsedPrice,
+                    parsedQuantity,
+                    url.isEmpty ? nil : url,
+                    fetchedImageData
+                )
+                dismiss()
+            } catch {
+                errorMessage = error.localizedDescription
+            }
+            isSubmitting = false
+        }
     }
 }
 

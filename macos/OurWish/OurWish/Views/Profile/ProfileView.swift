@@ -183,21 +183,23 @@ struct ProfileView: View {
 
     private func saveProfile() {
         isSaving = true
-        do {
-            try authStore.updateProfile(
-                firstName: firstName,
-                lastName: lastName,
-                displayName: displayName,
-                bio: bio.isEmpty ? nil : bio,
-                profileImageData: profileImageData
-            )
-            successMessage = "Profile updated"
-            errorMessage = nil
-        } catch {
-            errorMessage = error.localizedDescription
-            successMessage = nil
+        Task { @MainActor in
+            do {
+                try await authStore.updateProfile(
+                    firstName: firstName,
+                    lastName: lastName,
+                    displayName: displayName,
+                    bio: bio.isEmpty ? nil : bio,
+                    profileImageData: profileImageData
+                )
+                successMessage = "Profile updated"
+                errorMessage = nil
+            } catch {
+                errorMessage = error.localizedDescription
+                successMessage = nil
+            }
+            isSaving = false
         }
-        isSaving = false
     }
 
     private func changePassword() {
@@ -208,17 +210,19 @@ struct ProfileView: View {
         }
 
         isChangingPassword = true
-        do {
-            try authStore.changePassword(currentPassword: currentPassword, newPassword: newPassword)
-            passwordSuccessMessage = "Password updated"
-            passwordErrorMessage = nil
-            currentPassword = ""
-            newPassword = ""
-            confirmPassword = ""
-        } catch {
-            passwordErrorMessage = error.localizedDescription
-            passwordSuccessMessage = nil
+        Task { @MainActor in
+            do {
+                try await authStore.changePassword(currentPassword: currentPassword, newPassword: newPassword)
+                passwordSuccessMessage = "Password updated"
+                passwordErrorMessage = nil
+                currentPassword = ""
+                newPassword = ""
+                confirmPassword = ""
+            } catch {
+                passwordErrorMessage = error.localizedDescription
+                passwordSuccessMessage = nil
+            }
+            isChangingPassword = false
         }
-        isChangingPassword = false
     }
 }

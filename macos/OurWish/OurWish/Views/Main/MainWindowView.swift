@@ -34,8 +34,10 @@ struct MainWindowView: View {
                         Label("New Wish List", systemImage: "gift")
                     }
                     Button {
-                        collaborativeStore.refreshPartners()
-                        showCreateCollaborativeList = true
+                        Task {
+                            await collaborativeStore.refreshPartners()
+                            showCreateCollaborativeList = true
+                        }
                     } label: {
                         Label("New Collaborative List", systemImage: "person.2")
                     }
@@ -62,13 +64,13 @@ struct MainWindowView: View {
         }
         .sheet(isPresented: $showCreateWishList) {
             CreateWishListSheet { name in
-                try wishListStore.createList(name: name)
+                try await wishListStore.createList(name: name)
                 activeSection = .wishLists
             }
         }
         .sheet(isPresented: $showCreateCollaborativeList) {
             CreateCollaborativeListSheet(partners: collaborativeStore.partners) { email, name in
-                try collaborativeStore.createList(partnerEmail: email, name: name)
+                try await collaborativeStore.createList(partnerEmail: email, name: name)
                 activeSection = .collaborative
             }
         }
@@ -81,7 +83,7 @@ struct MainWindowView: View {
     /// `Grants-MacBook-Pro.local`, resolvable by other devices on the same network via
     /// Bonjour/mDNS without needing to know the Mac's IP address.
     private var webAccessURL: String {
-        "http://\(ProcessInfo.processInfo.hostName):\(WishServer.defaultPort)"
+        AppRuntime.webAccessURL
     }
 
     private var selectionBinding: Binding<SidebarSelection?> {

@@ -49,7 +49,13 @@ struct CollaborativeDetailView: View {
         }
         .sheet(isPresented: $showAddItem) {
             AddItemSheet { name, price, quantity, url, imageData in
-                run { try store.addItem(productName: name, price: price, quantity: quantity, url: url, imageData: imageData) }
+                try await store.addItem(
+                    productName: name,
+                    price: price,
+                    quantity: quantity,
+                    url: url,
+                    imageData: imageData
+                )
             }
         }
         .confirmationDialog(
@@ -58,7 +64,7 @@ struct CollaborativeDetailView: View {
             titleVisibility: .visible
         ) {
             Button("Delete List", role: .destructive) {
-                run { try store.deleteList(list.id) }
+                run { try await store.deleteList(list.id) }
             }
             Button("Cancel", role: .cancel) {}
         } message: {
@@ -66,12 +72,14 @@ struct CollaborativeDetailView: View {
         }
     }
 
-    private func run(_ operation: () throws -> Void) {
-        do {
-            try operation()
-            errorMessage = nil
-        } catch {
-            errorMessage = error.localizedDescription
+    private func run(_ operation: @escaping () async throws -> Void) {
+        Task { @MainActor in
+            do {
+                try await operation()
+                errorMessage = nil
+            } catch {
+                errorMessage = error.localizedDescription
+            }
         }
     }
 }

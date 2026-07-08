@@ -1,9 +1,11 @@
 import Foundation
-import GRDB
+#if canImport(Observation)
 import Observation
+#endif
 
-/// Mirrors `WishListStore` for collaborative lists — see that file for the
-/// `.start`-over-`.values(in:)` observation rationale.
+/// Mirrors `WishListStore` for collaborative lists, backed by either local or remote
+/// services depending on app configuration.
+#if canImport(Observation)
 @MainActor
 @Observable
 public final class CollaborativeStore {
@@ -12,46 +14,46 @@ public final class CollaborativeStore {
     public var selectedListId: Int64? {
         didSet {
             guard oldValue != selectedListId else { return }
-            observeItems()
+            Task { await refreshItems() }
         }
     }
     public private(set) var items: [CollaborativeItem] = []
     public private(set) var purchasedItems: [CollaborativeItem] = []
     public var lastError: String?
 
-    public let repository: CollaborativeListRepository
-    private let userRepository: UserRepository
-    private let dbWriter: any DatabaseWriter
+    private let service: any CollaborativeStoreService
     private var userId: Int64?
 
-    private var listsCancellable: DatabaseCancellable?
-    private var itemsCancellable: DatabaseCancellable?
-    private var purchasedCancellable: DatabaseCancellable?
-
-    public init(dbWriter: any DatabaseWriter = DatabaseManager.shared) {
-        self.dbWriter = dbWriter
-        self.repository = CollaborativeListRepository(dbWriter: dbWriter)
-        self.userRepository = UserRepository(dbWriter: dbWriter)
+    public init(service: any CollaborativeStoreService = LocalCollaborativeStoreService()) {
+        self.service = service
     }
 
-    /// Call on login/logout to (re)start observations scoped to the new user.
+    /// Call on login/logout to reload state scoped to the active user.
     public func setCurrentUser(_ userId: Int64?) {
         guard self.userId != userId else { return }
         self.userId = userId
         selectedListId = nil
         items = []
         purchasedItems = []
-        refreshPartners()
-        observeLists()
+        if userId == nil {
+            partners = []
+            lists = []
+            return
+        }
+        Task {
+            await refreshPartners()
+            await refreshLists()
+        }
     }
 
-    public func refreshPartners() {
+    public func refreshPartners() async {
         guard let userId else {
             partners = []
             return
         }
         do {
-            partners = try userRepository.partners(excluding: userId)
+            partners = try await service.partners(excluding: userId)
+            lastError = nil
         } catch {
             lastError = error.localizedDescription
         }
@@ -59,15 +61,17 @@ public final class CollaborativeStore {
 
     // MARK: Lists
 
-    public func createList(partnerEmail: String, name: String) throws {
+    public func createList(partnerEmail: String, name: String) async throws {
         guard let userId else { return }
-        let list = try repository.createList(currentUserId: userId, partnerEmail: partnerEmail, name: name)
+        let list = try await service.createCollaborativeList(currentUserId: userId, partnerEmail: partnerEmail, name: name)
+        await refreshLists()
         selectedListId = list.id
     }
 
-    public func deleteList(_ listId: Int64) throws {
+    public func deleteList(_ listId: Int64) async throws {
         guard let userId else { return }
-        try repository.deleteList(listId: listId, userId: userId)
+        try await service.deleteCollaborativeList(listId: listId, userId: userId)
+        await refreshLists()
         if selectedListId == listId {
             selectedListId = nil
         }
@@ -75,119 +79,75 @@ public final class CollaborativeStore {
 
     // MARK: Items
 
-    public func addItem(productName: String, price: Double, quantity: Int, url: String?, imageData: Data? = nil) throws {
+    public func addItem(productName: String, price: Double, quantity: Int, url: String?, imageData: Data? = nil) async throws {
         guard let userId, let listId = selectedListId else {
             throw RepositoryError.collaborativeListNotFound
         }
-        try repository.addItem(
+        _ = try await service.addCollaborativeItem(
             listId: listId, userId: userId,
             productName: productName, price: price, quantity: quantity, url: url, imageData: imageData
         )
+        await refreshItems()
     }
 
-    public func updateItem(_ itemId: Int64, productName: String, price: Double, quantity: Int, url: String?) throws {
+    public func updateItem(_ itemId: Int64, productName: String, price: Double, quantity: Int, url: String?) async throws {
         guard let userId, let listId = selectedListId else { return }
-        try repository.updateItem(
+        try await service.updateCollaborativeItem(
             itemId: itemId, listId: listId, userId: userId,
             productName: productName, price: price, quantity: quantity, url: url
         )
+        await refreshItems()
     }
 
-    public func setPurchased(_ itemId: Int64, isPurchased: Bool) throws {
+    public func setPurchased(_ itemId: Int64, isPurchased: Bool) async throws {
         guard let userId, let listId = selectedListId else { return }
-        try repository.setPurchased(itemId: itemId, listId: listId, userId: userId, isPurchased: isPurchased)
+        try await service.setCollaborativeItemPurchased(itemId: itemId, listId: listId, userId: userId, isPurchased: isPurchased)
+        await refreshItems()
     }
 
-    public func deleteItem(_ itemId: Int64) throws {
+    public func deleteItem(_ itemId: Int64) async throws {
         guard let userId, let listId = selectedListId else { return }
-        try repository.deleteItem(itemId: itemId, listId: listId, userId: userId)
+        try await service.deleteCollaborativeItem(itemId: itemId, listId: listId, userId: userId)
+        await refreshItems()
     }
 
-    // MARK: Observation
+    // MARK: Refresh
 
-    private func observeLists() {
-        listsCancellable = nil
+    private func refreshLists() async {
         guard let userId else {
             lists = []
             return
         }
 
-        let observation = ValueObservation.tracking { db in
-            try CollaborativeListWithPartner.fetchAll(
-                db,
-                sql: """
-                    SELECT cl.id, cl.name, cl.user1_id, cl.user2_id,
-                           CASE WHEN cl.user1_id = ? THEN u2.display_name ELSE u1.display_name END AS partner_name
-                    FROM collaborative_lists cl
-                    JOIN users u1 ON cl.user1_id = u1.id
-                    JOIN users u2 ON cl.user2_id = u2.id
-                    WHERE cl.user1_id = ? OR cl.user2_id = ?
-                    ORDER BY cl.created_at ASC
-                    """,
-                arguments: [userId, userId, userId]
-            )
-        }
-
-        listsCancellable = observation.start(
-            in: dbWriter,
-            scheduling: .mainActor,
-            onError: { [weak self] error in
-                self?.lastError = error.localizedDescription
-            },
-            onChange: { [weak self] rows in
-                guard let self else { return }
-                self.lists = rows
-                if let selected = self.selectedListId, !rows.contains(where: { $0.id == selected }) {
-                    self.selectedListId = nil
-                }
+        do {
+            let rows = try await service.collaborativeLists(for: userId)
+            lists = rows
+            if selectedListId == nil || !rows.contains(where: { $0.id == selectedListId }) {
+                selectedListId = rows.first?.id
             }
-        )
+            lastError = nil
+        } catch {
+            lastError = error.localizedDescription
+        }
     }
 
-    private func observeItems() {
-        itemsCancellable = nil
-        purchasedCancellable = nil
-
+    private func refreshItems() async {
         guard let listId = selectedListId else {
             items = []
             purchasedItems = []
             return
         }
 
-        let itemsObservation = ValueObservation.tracking { db in
-            try CollaborativeItem
-                .filter(CollaborativeItem.Columns.listId == listId)
-                .filter(CollaborativeItem.Columns.isPurchased == false)
-                .order(Column("created_at").desc)
-                .fetchAll(db)
+        guard let userId else { return }
+        do {
+            async let active = service.collaborativeItems(listId: listId, userId: userId, purchased: false)
+            async let purchased = service.collaborativeItems(listId: listId, userId: userId, purchased: true)
+            items = try await active
+            purchasedItems = try await purchased
+            lastError = nil
+        } catch {
+            lastError = error.localizedDescription
         }
-        itemsCancellable = itemsObservation.start(
-            in: dbWriter,
-            scheduling: .mainActor,
-            onError: { [weak self] error in
-                self?.lastError = error.localizedDescription
-            },
-            onChange: { [weak self] rows in
-                self?.items = rows
-            }
-        )
-
-        let purchasedObservation = ValueObservation.tracking { db in
-            try CollaborativeItem
-                .filter(CollaborativeItem.Columns.listId == listId)
-                .filter(CollaborativeItem.Columns.isPurchased == true)
-                .order(Column("created_at").desc)
-                .fetchAll(db)
-        }
-        purchasedCancellable = purchasedObservation.start(
-            in: dbWriter,
-            scheduling: .mainActor,
-            onError: { [weak self] error in
-                self?.lastError = error.localizedDescription
-            },
-            onChange: { [weak self] rows in
-                self?.purchasedItems = rows
-            }
-        )
     }
 }
+#endif

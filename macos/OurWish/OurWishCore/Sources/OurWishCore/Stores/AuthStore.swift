@@ -1,13 +1,10 @@
 import Foundation
-import GRDB
+#if canImport(Observation)
 import Observation
+#endif
 
-/// In-memory "who's logged in right now" concept, replacing the original app's
-/// server-side `express-session` cookie. There's no network boundary here, so logging
-/// out just clears this and logging back in re-authenticates against the local DB;
-/// nothing is persisted across app launches (matches the original's session lifetime
-/// being tied to the server process, just shorter — a deliberate simplification since
-/// there's no separate "server" to keep a session alive between launches).
+/// Tracks the authenticated user for either local or remote-backed app modes.
+#if canImport(Observation)
 @MainActor
 @Observable
 public final class AuthStore {
@@ -15,35 +12,39 @@ public final class AuthStore {
     public private(set) var userCount: Int = 0
     public var lastError: String?
 
-    private let userRepository: UserRepository
+    private let service: any AuthStoreService
 
-    public init(dbWriter: any DatabaseWriter = DatabaseManager.shared) {
-        self.userRepository = UserRepository(dbWriter: dbWriter)
-        refreshUserCount()
+    public init(service: any AuthStoreService = LocalAuthStoreService()) {
+        self.service = service
     }
 
     public func refreshUserCount() {
-        do {
-            userCount = try userRepository.count()
-        } catch {
-            lastError = error.localizedDescription
+        Task {
+            do {
+                userCount = try await service.userCount()
+                lastError = nil
+            } catch {
+                lastError = error.localizedDescription
+            }
         }
     }
 
-    public func login(email: String, password: String) throws {
-        currentUser = try userRepository.login(email: email, password: password)
+    public func login(email: String, password: String) async throws {
+        currentUser = try await service.login(email: email, password: password)
+        refreshUserCount()
     }
 
     public func logout() {
+        Task {
+            try? await service.logout()
+        }
         currentUser = nil
     }
 
     /// Only reachable from the main window's "Create New User" action, i.e. while
-    /// already logged in as someone — mirrors the original's `req.session.userId`
-    /// requirement, which is enforced by UI navigation rather than a repository check
-    /// since there's no separate untrusted client here.
-    public func register(firstName: String, lastName: String, email: String, password: String) throws {
-        try userRepository.createUser(firstName: firstName, lastName: lastName, email: email, password: password)
+    /// already logged in as someone.
+    public func register(firstName: String, lastName: String, email: String, password: String) async throws {
+        try await service.register(firstName: firstName, lastName: lastName, email: email, password: password)
         refreshUserCount()
     }
 
@@ -55,9 +56,9 @@ public final class AuthStore {
         displayName: String,
         bio: String?,
         profileImageData: Data?
-    ) throws {
+    ) async throws {
         guard let userId = currentUser?.id else { return }
-        currentUser = try userRepository.updateProfile(
+        currentUser = try await service.updateProfile(
             userId: userId,
             firstName: firstName,
             lastName: lastName,
@@ -67,8 +68,9 @@ public final class AuthStore {
         )
     }
 
-    public func changePassword(currentPassword: String, newPassword: String) throws {
+    public func changePassword(currentPassword: String, newPassword: String) async throws {
         guard let userId = currentUser?.id else { return }
-        try userRepository.updatePassword(userId: userId, currentPassword: currentPassword, newPassword: newPassword)
+        try await service.changePassword(userId: userId, currentPassword: currentPassword, newPassword: newPassword)
     }
 }
+#endif

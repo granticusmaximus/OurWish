@@ -22,24 +22,26 @@ struct CollaborativeItemsTableView: View {
                 purchasedItems: store.purchasedItems.map(ItemRow.init),
                 config: ItemsTableConfig(showURLColumn: false, allowHideToggle: false, allowRename: false),
                 onSave: { id, name, price, quantity, url in
-                    run { try store.updateItem(id, productName: name, price: price, quantity: quantity, url: url) }
+                    run { try await store.updateItem(id, productName: name, price: price, quantity: quantity, url: url) }
                 },
                 onTogglePurchased: { id, isPurchased in
-                    run { try store.setPurchased(id, isPurchased: isPurchased) }
+                    run { try await store.setPurchased(id, isPurchased: isPurchased) }
                 },
                 onDelete: { id in
-                    run { try store.deleteItem(id) }
+                    run { try await store.deleteItem(id) }
                 }
             )
         }
     }
 
-    private func run(_ operation: () throws -> Void) {
-        do {
-            try operation()
-            errorMessage = nil
-        } catch {
-            errorMessage = error.localizedDescription
+    private func run(_ operation: @escaping () async throws -> Void) {
+        Task { @MainActor in
+            do {
+                try await operation()
+                errorMessage = nil
+            } catch {
+                errorMessage = error.localizedDescription
+            }
         }
     }
 }

@@ -97,14 +97,21 @@ struct RegisterView: View {
         }
 
         isSubmitting = true
-        do {
-            try authStore.register(firstName: firstName, lastName: lastName, email: email, password: password)
-            successMessage = "User created successfully!"
-            errorMessage = nil
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { onBack() }
-        } catch {
-            errorMessage = error.localizedDescription
+        Task { @MainActor in
+            do {
+                try await authStore.register(
+                    firstName: firstName,
+                    lastName: lastName,
+                    email: email,
+                    password: password
+                )
+                successMessage = "User created successfully!"
+                errorMessage = nil
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { onBack() }
+            } catch {
+                errorMessage = error.localizedDescription
+            }
+            isSubmitting = false
         }
-        isSubmitting = false
     }
 }

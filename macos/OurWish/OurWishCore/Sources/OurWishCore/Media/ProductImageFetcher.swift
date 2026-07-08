@@ -1,6 +1,9 @@
-import AppKit
 import Foundation
+
+#if canImport(AppKit) && canImport(LinkPresentation)
+import AppKit
 import LinkPresentation
+#endif
 
 /// Fetches a product photo from a pasted product URL, using the system's
 /// `LinkPresentation` framework (the same link-preview machinery Messages/Safari use)
@@ -12,6 +15,7 @@ public enum ProductImageFetcher {
     /// Returns downscaled, JPEG-compressed image data suitable for storing in the
     /// database, or `nil` if the URL is invalid, unreachable, or has no preview image.
     public static func fetchImageData(for urlString: String) async -> Data? {
+#if canImport(AppKit) && canImport(LinkPresentation)
         let trimmed = urlString.trimmingCharacters(in: .whitespacesAndNewlines)
         guard let url = URL(string: trimmed),
               let scheme = url.scheme?.lowercased(),
@@ -37,5 +41,9 @@ public enum ProductImageFetcher {
 
         guard let nsImage else { return nil }
         return ImageResizing.resizedJPEGData(from: nsImage, maxDimension: 512, compressionQuality: 0.8)
+#else
+        _ = urlString
+        return nil
+#endif
     }
 }

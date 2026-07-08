@@ -1,26 +1,57 @@
 import Foundation
-import Security
+import GRDB
 
-/// Maps opaque bearer tokens to a `userId`. In-memory only — restarting the app (and
-/// therefore the embedded server) invalidates every session, which is an acceptable
-/// simplification for a household app rather than adding a persisted-session table.
+/// Persists opaque bearer tokens in the database so sessions survive backend restarts.
 actor TokenStore {
-    private var tokensToUserId: [String: Int64] = [:]
+    private let dbWriter: any DatabaseWriter
 
-    func issueToken(for userId: Int64) -> String {
-        var bytes = [UInt8](repeating: 0, count: 32)
-        let result = SecRandomCopyBytes(kSecRandomDefault, bytes.count, &bytes)
-        precondition(result == errSecSuccess, "Failed to generate a random session token")
-        let token = Data(bytes).base64EncodedString()
-        tokensToUserId[token] = userId
+    init(dbWriter: any DatabaseWriter) {
+        self.dbWriter = dbWriter
+    }
+
+    func issueToken(for userId: Int64) throws -> String {
+        let token = Self.generateToken()
+        try dbWriter.write { db in
+            try db.execute(
+                sql: """
+                    INSERT INTO auth_tokens (token, user_id)
+                    VALUES (?, ?)
+                    """,
+                arguments: [token, userId]
+            )
+        }
         return token
     }
 
-    func userId(for token: String) -> Int64? {
-        tokensToUserId[token]
+    func userId(for token: String) throws -> Int64? {
+        try dbWriter.read { db in
+            try Int64.fetchOne(
+                db,
+                sql: """
+                    SELECT user_id
+                    FROM auth_tokens
+                    WHERE token = ?
+                    """,
+                arguments: [token]
+            )
+        }
     }
 
-    func revoke(_ token: String) {
-        tokensToUserId[token] = nil
+    func revoke(_ token: String) throws {
+        try dbWriter.write { db in
+            try db.execute(
+                sql: "DELETE FROM auth_tokens WHERE token = ?",
+                arguments: [token]
+            )
+        }
+    }
+
+    private static func generateToken() -> String {
+        let bytes = (0..<32).map { _ in UInt8.random(in: .min ... .max) }
+        return Data(bytes)
+            .base64EncodedString()
+            .replacingOccurrences(of: "+", with: "-")
+            .replacingOccurrences(of: "/", with: "_")
+            .replacingOccurrences(of: "=", with: "")
     }
 }

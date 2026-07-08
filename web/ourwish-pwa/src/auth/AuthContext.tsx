@@ -42,6 +42,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const logout = useCallback(() => {
+    void api.logout().catch(() => {
+      // Clearing local auth state is still the important part if the network is gone.
+    })
     setToken(null)
     setCurrentUserState(null)
   }, [])
