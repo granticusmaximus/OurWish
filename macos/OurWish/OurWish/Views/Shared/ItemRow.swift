@@ -12,6 +12,7 @@ struct ItemRow: Identifiable, Equatable {
     var url: String?
     var isPurchased: Bool
     var isHidden: Bool
+    var imageData: Data?
 
     var lineTotal: Double { price * Double(quantity) }
 }
@@ -25,7 +26,8 @@ extension ItemRow {
             quantity: item.quantity,
             url: item.url,
             isPurchased: item.isPurchased,
-            isHidden: item.isHidden
+            isHidden: item.isHidden,
+            imageData: item.imageData
         )
     }
 
@@ -37,7 +39,8 @@ extension ItemRow {
             quantity: item.quantity,
             url: item.url,
             isPurchased: item.isPurchased,
-            isHidden: false
+            isHidden: false,
+            imageData: item.imageData
         )
     }
 }

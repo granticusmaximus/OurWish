@@ -50,8 +50,13 @@ struct WishListDetailView: View {
             }
         }
         .sheet(isPresented: $showAddItem) {
-            AddItemSheet { name, price, quantity, url in
-                run { try store.addItem(productName: name, price: price, quantity: quantity, url: url, listId: list.id) }
+            AddItemSheet { name, price, quantity, url, imageData in
+                run {
+                    try store.addItem(
+                        productName: name, price: price, quantity: quantity, url: url,
+                        listId: list.id, imageData: imageData
+                    )
+                }
             }
         }
         .confirmationDialog(

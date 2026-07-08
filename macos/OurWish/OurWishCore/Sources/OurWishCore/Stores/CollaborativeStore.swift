@@ -75,13 +75,13 @@ public final class CollaborativeStore {
 
     // MARK: Items
 
-    public func addItem(productName: String, price: Double, quantity: Int, url: String?) throws {
+    public func addItem(productName: String, price: Double, quantity: Int, url: String?, imageData: Data? = nil) throws {
         guard let userId, let listId = selectedListId else {
             throw RepositoryError.collaborativeListNotFound
         }
         try repository.addItem(
             listId: listId, userId: userId,
-            productName: productName, price: price, quantity: quantity, url: url
+            productName: productName, price: price, quantity: quantity, url: url, imageData: imageData
         )
     }
 

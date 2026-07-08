@@ -66,6 +66,19 @@ public final class CollaborativeListRepository: Sendable {
 
     // MARK: Items
 
+    /// Looks up an item by id only, scoped to lists the user has access to (used by the
+    /// server's image-serving route, which only knows the item id from the URL).
+    public func item(id: Int64, userId: Int64) throws -> CollaborativeItem? {
+        try dbWriter.read { db in
+            guard let item = try CollaborativeItem.fetchOne(db, key: id) else { return nil }
+            let hasAccess = try CollaborativeList
+                .filter(CollaborativeList.Columns.id == item.listId)
+                .filter(CollaborativeList.Columns.user1Id == userId || CollaborativeList.Columns.user2Id == userId)
+                .fetchCount(db) > 0
+            return hasAccess ? item : nil
+        }
+    }
+
     public func items(listId: Int64, userId: Int64, purchased: Bool) throws -> [CollaborativeItem] {
         try dbWriter.read { db in
             try assertHasAccess(listId, userId: userId, db: db)
@@ -84,7 +97,8 @@ public final class CollaborativeListRepository: Sendable {
         productName: String,
         price: Double,
         quantity: Int,
-        url: String?
+        url: String?,
+        imageData: Data? = nil
     ) throws -> CollaborativeItem {
         try validateItemInput(productName: productName, quantity: quantity)
 
@@ -96,7 +110,8 @@ public final class CollaborativeListRepository: Sendable {
                 productName: productName,
                 price: price,
                 quantity: quantity,
-                url: url
+                url: url,
+                imageData: imageData
             )
             try item.insert(db)
             return item

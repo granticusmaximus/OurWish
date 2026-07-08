@@ -8,6 +8,8 @@ options:
 packages:
   OurWishCore:
     path: OurWishCore
+  OurWishServer:
+    path: OurWishServer
 
 targets:
   OurWish:
@@ -20,6 +22,8 @@ targets:
     dependencies:
       - package: OurWishCore
         product: OurWishCore
+      - package: OurWishServer
+        product: OurWishServer
     settings:
       base:
         PRODUCT_NAME: OurWish

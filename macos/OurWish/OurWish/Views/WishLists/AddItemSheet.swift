@@ -1,10 +1,14 @@
+import AppKit
+import OurWishCore
 import SwiftUI
 
 /// Replaces `AddItemForm.tsx`. Shared by the personal and collaborative flows — the
 /// sidebar now owns which list is active, so this always adds to "the list you're
 /// currently looking at" rather than offering its own list picker.
 struct AddItemSheet: View {
-    var onSubmit: (_ productName: String, _ price: Double, _ quantity: Int, _ url: String?) -> Void
+    var onSubmit: (
+        _ productName: String, _ price: Double, _ quantity: Int, _ url: String?, _ imageData: Data?
+    ) -> Void
 
     @Environment(\.dismiss) private var dismiss
     @State private var productName = ""
@@ -13,6 +17,10 @@ struct AddItemSheet: View {
     @State private var url = ""
     @State private var errorMessage: String?
     @FocusState private var productNameFocused: Bool
+
+    @State private var fetchedImageData: Data?
+    @State private var isFetchingImage = false
+    @State private var imageFetchTask: Task<Void, Never>?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
@@ -41,8 +49,10 @@ struct AddItemSheet: View {
                     .frame(width: 90)
                 }
                 LabeledField("Product URL") {
-                    TextField("Optional", text: $url)
+                    TextField("Optional — we'll try to grab a photo", text: $url)
                 }
+
+                imagePreview
             }
             .textFieldStyle(.roundedBorder)
 
@@ -58,12 +68,69 @@ struct AddItemSheet: View {
         .padding(24)
         .frame(minWidth: 420)
         .onAppear { productNameFocused = true }
+        .onChange(of: url, initial: false) { _, newValue in
+            scheduleImageFetch(for: newValue)
+        }
+    }
+
+    @ViewBuilder
+    private var imagePreview: some View {
+        if isFetchingImage {
+            HStack(spacing: 8) {
+                ProgressView()
+                    .controlSize(.small)
+                Text("Looking for a product photo…")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        } else if let fetchedImageData, let nsImage = NSImage(data: fetchedImageData) {
+            HStack(spacing: 8) {
+                Image(nsImage: nsImage)
+                    .resizable()
+                    .scaledToFill()
+                    .frame(width: 44, height: 44)
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                    .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(.separator))
+
+                Text("Photo found")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                Spacer()
+
+                Button("Remove", role: .destructive) { self.fetchedImageData = nil }
+                    .buttonStyle(.borderless)
+                    .font(.caption)
+            }
+        }
     }
 
     private var isValid: Bool {
         !productName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
             && Double(price) != nil
             && (Int(quantity).map { $0 >= 1 } ?? false)
+    }
+
+    private func scheduleImageFetch(for rawURL: String) {
+        imageFetchTask?.cancel()
+        fetchedImageData = nil
+        isFetchingImage = false
+
+        let trimmed = rawURL.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty, URL(string: trimmed) != nil else { return }
+
+        imageFetchTask = Task {
+            // Debounce so we don't fire a fetch on every keystroke while pasting/typing.
+            try? await Task.sleep(for: .milliseconds(700))
+            guard !Task.isCancelled else { return }
+
+            isFetchingImage = true
+            let data = await ProductImageFetcher.fetchImageData(for: trimmed)
+            guard !Task.isCancelled else { return }
+
+            fetchedImageData = data
+            isFetchingImage = false
+        }
     }
 
     private func submit() {
@@ -76,7 +143,8 @@ struct AddItemSheet: View {
             productName.trimmingCharacters(in: .whitespacesAndNewlines),
             parsedPrice,
             parsedQuantity,
-            url.isEmpty ? nil : url
+            url.isEmpty ? nil : url,
+            fetchedImageData
         )
         dismiss()
     }

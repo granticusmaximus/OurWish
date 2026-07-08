@@ -1,5 +1,7 @@
 import AppKit
+import Foundation
 import OurWishCore
+import OurWishServer
 import SwiftUI
 
 /// Replaces the `<Navbar>` + `<Container>` shell in `App.tsx` with a native macOS
@@ -46,6 +48,12 @@ struct MainWindowView: View {
                     Button("Edit Profile…") { showProfile = true }
                     Button("Create New User…", action: onCreateNewUser)
                     Divider()
+                    Button("Copy Web Access Link") {
+                        NSPasteboard.general.clearContents()
+                        NSPasteboard.general.setString(webAccessURL, forType: .string)
+                    }
+                    Text("Open \(webAccessURL) on your phone or another computer on this WiFi network")
+                    Divider()
                     Button("Log Out", role: .destructive) { authStore.logout() }
                 } label: {
                     AccountMenuLabel(user: authStore.currentUser)
@@ -67,6 +75,13 @@ struct MainWindowView: View {
         .sheet(isPresented: $showProfile) {
             ProfileView()
         }
+    }
+
+    /// Best-effort LAN URL for the companion web app. `hostName` typically looks like
+    /// `Grants-MacBook-Pro.local`, resolvable by other devices on the same network via
+    /// Bonjour/mDNS without needing to know the Mac's IP address.
+    private var webAccessURL: String {
+        "http://\(ProcessInfo.processInfo.hostName):\(WishServer.defaultPort)"
     }
 
     private var selectionBinding: Binding<SidebarSelection?> {

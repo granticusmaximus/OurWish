@@ -9,6 +9,7 @@ public struct CollaborativeItem: Codable, Identifiable, Equatable, Sendable {
     public var quantity: Int
     public var url: String?
     public var isPurchased: Bool
+    public var imageData: Data?
     public var createdAt: Date
 
     public init(
@@ -19,6 +20,7 @@ public struct CollaborativeItem: Codable, Identifiable, Equatable, Sendable {
         quantity: Int = 1,
         url: String? = nil,
         isPurchased: Bool = false,
+        imageData: Data? = nil,
         createdAt: Date = Date()
     ) {
         self.id = id
@@ -28,6 +30,7 @@ public struct CollaborativeItem: Codable, Identifiable, Equatable, Sendable {
         self.quantity = quantity
         self.url = url
         self.isPurchased = isPurchased
+        self.imageData = imageData
         self.createdAt = createdAt
     }
 
@@ -43,6 +46,7 @@ extension CollaborativeItem {
         case quantity
         case url
         case isPurchased = "is_purchased"
+        case imageData = "image_data"
         case createdAt = "created_at"
     }
 }

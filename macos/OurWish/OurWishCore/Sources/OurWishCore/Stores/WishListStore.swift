@@ -72,14 +72,17 @@ public final class WishListStore {
 
     // MARK: Items
 
-    public func addItem(productName: String, price: Double, quantity: Int, url: String?, listId: Int64? = nil) throws {
+    public func addItem(
+        productName: String, price: Double, quantity: Int, url: String?,
+        listId: Int64? = nil, imageData: Data? = nil
+    ) throws {
         guard let userId else { return }
         guard let targetListId = listId ?? selectedListId else {
             throw RepositoryError.wishListNotFound
         }
         try repository.addItem(
             listId: targetListId, userId: userId,
-            productName: productName, price: price, quantity: quantity, url: url
+            productName: productName, price: price, quantity: quantity, url: url, imageData: imageData
         )
     }
 

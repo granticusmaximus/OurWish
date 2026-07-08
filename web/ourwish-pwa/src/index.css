@@ -1,0 +1,128 @@
+:root {
+  /* Matches BrandColor.swift in the native app exactly, so the web app and the Mac
+     app read as the same product. */
+  --brand-start: #7c5cfc;
+  --brand-end: #ff6584;
+  --brand-gradient: linear-gradient(135deg, var(--brand-start), var(--brand-end));
+
+  --bg: #f7f7fb;
+  --surface: #ffffff;
+  --surface-secondary: #f1f1f6;
+  --border: #e2e2ea;
+  --text: #1c1c22;
+  --text-secondary: #6b6b76;
+  --danger: #e0435c;
+  --success: #2fae66;
+
+  color-scheme: light dark;
+  font-family:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #131318;
+    --surface: #1c1c24;
+    --surface-secondary: #24242e;
+    --border: #33333f;
+    --text: #f2f2f5;
+    --text-secondary: #a0a0ab;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+button {
+  font-family: inherit;
+}
+
+input,
+textarea,
+select {
+  font-family: inherit;
+  font-size: 0.95rem;
+  padding: 0.55rem 0.7rem;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+  outline: 2px solid var(--brand-start);
+  outline-offset: -1px;
+}
+
+.btn {
+  font-size: 0.9rem;
+  font-weight: 600;
+  padding: 0.55rem 1rem;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.btn-primary {
+  border: none;
+  background: var(--brand-gradient);
+  color: white;
+}
+
+.btn-danger {
+  border: none;
+  background: var(--danger);
+  color: white;
+}
+
+.btn-link {
+  border: none;
+  background: none;
+  color: var(--brand-start);
+  padding: 0;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.error-text {
+  color: var(--danger);
+  font-size: 0.85rem;
+}
+
+.success-text {
+  color: var(--success);
+  font-size: 0.85rem;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.field label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}

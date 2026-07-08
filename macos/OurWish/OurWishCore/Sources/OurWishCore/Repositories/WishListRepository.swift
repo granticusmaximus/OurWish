@@ -71,6 +71,15 @@ public final class WishListRepository: Sendable {
 
     // MARK: Items
 
+    public func item(id: Int64, userId: Int64) throws -> WishListItem? {
+        try dbWriter.read { db in
+            try WishListItem
+                .filter(WishListItem.Columns.id == id)
+                .filter(WishListItem.Columns.userId == userId)
+                .fetchOne(db)
+        }
+    }
+
     public func items(listId: Int64, userId: Int64, purchased: Bool) throws -> [WishListItem] {
         try dbWriter.read { db in
             try assertOwnsList(listId, userId: userId, db: db)
@@ -89,7 +98,8 @@ public final class WishListRepository: Sendable {
         productName: String,
         price: Double,
         quantity: Int,
-        url: String?
+        url: String?,
+        imageData: Data? = nil
     ) throws -> WishListItem {
         try validateItemInput(productName: productName, quantity: quantity)
 
@@ -102,7 +112,8 @@ public final class WishListRepository: Sendable {
                 productName: productName,
                 price: price,
                 quantity: quantity,
-                url: url
+                url: url,
+                imageData: imageData
             )
             try item.insert(db)
             return item

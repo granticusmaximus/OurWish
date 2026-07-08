@@ -11,6 +11,7 @@ public struct WishListItem: Codable, Identifiable, Equatable, Sendable {
     public var url: String?
     public var isPurchased: Bool
     public var isHidden: Bool
+    public var imageData: Data?
     public var createdAt: Date
 
     public init(
@@ -23,6 +24,7 @@ public struct WishListItem: Codable, Identifiable, Equatable, Sendable {
         url: String? = nil,
         isPurchased: Bool = false,
         isHidden: Bool = false,
+        imageData: Data? = nil,
         createdAt: Date = Date()
     ) {
         self.id = id
@@ -34,6 +36,7 @@ public struct WishListItem: Codable, Identifiable, Equatable, Sendable {
         self.url = url
         self.isPurchased = isPurchased
         self.isHidden = isHidden
+        self.imageData = imageData
         self.createdAt = createdAt
     }
 
@@ -51,6 +54,7 @@ extension WishListItem {
         case url
         case isPurchased = "is_purchased"
         case isHidden = "is_hidden"
+        case imageData = "image_data"
         case createdAt = "created_at"
     }
 }

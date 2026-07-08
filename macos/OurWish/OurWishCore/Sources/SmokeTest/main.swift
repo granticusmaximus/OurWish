@@ -268,6 +268,30 @@ do {
     }
 }
 
+do {
+    let dbQueue = try freshDatabase()
+    let user = try insertUser(dbQueue, email: "a@example.com")
+    let repo = WishListRepository(dbWriter: dbQueue)
+    let list = try repo.createList(userId: user.id!, name: "My Wish List")
+    let photoData = Data([0xFF, 0xD8, 0xFF, 0xD9])
+
+    let item = try repo.addItem(
+        listId: list.id!, userId: user.id!, productName: "Espresso Machine",
+        price: 199, quantity: 1, url: "https://example.com/product", imageData: photoData
+    )
+    check("addItem stores the fetched product image", item.imageData == photoData)
+
+    let refetched = try repo.items(listId: list.id!, userId: user.id!, purchased: false).first
+    check("product image persists to the database", refetched?.imageData == photoData)
+
+    try repo.updateItem(
+        itemId: item.id!, userId: user.id!, productName: "Espresso Machine (Deluxe)",
+        price: 219, quantity: 1, url: "https://example.com/product"
+    )
+    let afterEdit = try repo.items(listId: list.id!, userId: user.id!, purchased: false).first
+    check("editing an item does not clear its existing product image", afterEdit?.imageData == photoData)
+}
+
 // MARK: - CollaborativeListRepository
 
 section("CollaborativeListRepository")
@@ -327,6 +351,24 @@ do {
         try CollaborativeItem.filter(CollaborativeItem.Columns.listId == list.id!).fetchCount(db)
     }
     check("deleting a collaborative list cascades its items", remainingItemCount == 0)
+}
+
+do {
+    let dbQueue = try freshDatabase()
+    let userA = try insertUser(dbQueue, email: "a@example.com")
+    try insertUser(dbQueue, email: "b@example.com")
+    let repo = CollaborativeListRepository(dbWriter: dbQueue)
+    let list = try repo.createList(currentUserId: userA.id!, partnerEmail: "b@example.com", name: "Vacation")
+    let photoData = Data([0xFF, 0xD8, 0xFF, 0xD9])
+
+    let item = try repo.addItem(
+        listId: list.id!, userId: userA.id!, productName: "Sunscreen",
+        price: 12.5, quantity: 2, url: "https://example.com/sunscreen", imageData: photoData
+    )
+    check("collaborative addItem stores the fetched product image", item.imageData == photoData)
+
+    let refetched = try repo.items(listId: list.id!, userId: userA.id!, purchased: false).first
+    check("collaborative product image persists to the database", refetched?.imageData == photoData)
 }
 
 // MARK: - DatabaseManager path resolution

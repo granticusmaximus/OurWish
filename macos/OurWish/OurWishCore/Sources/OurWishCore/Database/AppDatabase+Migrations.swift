@@ -78,6 +78,17 @@ extension AppDatabase {
             }
         }
 
+        // Adds a product image column to items, auto-populated from a product URL's
+        // page metadata when available (see the app target's ProductImageFetcher).
+        migrator.registerMigration("v3AddItemImages") { db in
+            try db.alter(table: "wish_list_items") { t in
+                t.add(column: "image_data", .blob)
+            }
+            try db.alter(table: "collaborative_items") { t in
+                t.add(column: "image_data", .blob)
+            }
+        }
+
         return migrator
     }
 }

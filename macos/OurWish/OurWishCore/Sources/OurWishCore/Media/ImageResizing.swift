@@ -1,10 +1,13 @@
 import AppKit
+import Foundation
 
-/// Downscales and JPEG-compresses a picked profile photo before it's stored as a BLOB
-/// in the `users.profile_image_data` column — keeps the database small regardless of
-/// how large the source image file was.
-enum ImageResizing {
-    static func resizedJPEGData(
+/// Downscales and JPEG-compresses an image before it's stored as a BLOB (profile
+/// photos on `users`, product photos on items) — keeps the database small regardless
+/// of how large the source image was. Shared by the SwiftUI app (photo picker) and the
+/// embedded HTTP server (photo uploads from the web PWA), so it lives in the plain
+/// `OurWishCore` package rather than the app target.
+public enum ImageResizing {
+    public static func resizedJPEGData(
         from url: URL,
         maxDimension: CGFloat = 256,
         compressionQuality: CGFloat = 0.85
@@ -13,7 +16,16 @@ enum ImageResizing {
         return resizedJPEGData(from: image, maxDimension: maxDimension, compressionQuality: compressionQuality)
     }
 
-    static func resizedJPEGData(
+    public static func resizedJPEGData(
+        from data: Data,
+        maxDimension: CGFloat = 256,
+        compressionQuality: CGFloat = 0.85
+    ) -> Data? {
+        guard let image = NSImage(data: data) else { return nil }
+        return resizedJPEGData(from: image, maxDimension: maxDimension, compressionQuality: compressionQuality)
+    }
+
+    public static func resizedJPEGData(
         from image: NSImage,
         maxDimension: CGFloat = 256,
         compressionQuality: CGFloat = 0.85

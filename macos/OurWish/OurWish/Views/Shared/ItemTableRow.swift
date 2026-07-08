@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 
 /// One line-item row, in either display or inline-edit mode. Shared by the personal and
@@ -28,7 +29,10 @@ struct ItemTableRow: View {
             if isEditing {
                 TextField("Product name", text: $draft.productName)
             } else {
-                Text(item.productName)
+                HStack(spacing: 8) {
+                    thumbnail
+                    Text(item.productName)
+                }
             }
 
             if isEditing {
@@ -94,5 +98,17 @@ struct ItemTableRow: View {
     private var lineTotal: Double {
         guard isEditing else { return item.lineTotal }
         return (draft.parsedPrice ?? item.price) * Double(draft.parsedQuantity ?? item.quantity)
+    }
+
+    @ViewBuilder
+    private var thumbnail: some View {
+        if let imageData = item.imageData, let nsImage = NSImage(data: imageData) {
+            Image(nsImage: nsImage)
+                .resizable()
+                .scaledToFill()
+                .frame(width: 28, height: 28)
+                .clipShape(RoundedRectangle(cornerRadius: 6))
+                .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(.separator, lineWidth: 0.5))
+        }
     }
 }

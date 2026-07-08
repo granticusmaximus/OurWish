@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		00D5624D23C2BA93DD8060E3 /* CollaborativeDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09296FEA47A901177E2493EE /* CollaborativeDetailView.swift */; };
+		0D5FC54BEF24BA1FDD373E86 /* OurWishServer in Frameworks */ = {isa = PBXBuildFile; productRef = 54F84EF8902C103CDA11C2B9 /* OurWishServer */; };
 		34FC5CFE0D0D4628EDD9F332 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = F9A6783464603BD625FB763E /* Assets.xcassets */; };
 		467A3C00EF6AE2CFB908663B /* ItemsTableView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3417C50D90EA0E935C2FBA9C /* ItemsTableView.swift */; };
 		52FBB807173A117A8DEF6292 /* OurWishCore in Frameworks */ = {isa = PBXBuildFile; productRef = D2F0CBF2AA5EA32A065F49BD /* OurWishCore */; };
@@ -31,14 +32,12 @@
 		E0EFA98058CC39B16294151A /* WishListDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13FBE8D2ACEDDE3C21CA1D70 /* WishListDetailView.swift */; };
 		E3549DAFDE2036A4D1107D26 /* CollaborativeItemsTableView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 758CF6E8098FCC7741C4A604 /* CollaborativeItemsTableView.swift */; };
 		F3EC3971EB4DAAE19FEBADAC /* ItemDraft.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6614637C3E21AB5F5262F972 /* ItemDraft.swift */; };
-		F9178FAC9EC41158E04F90C6 /* ImageResizing.swift in Sources */ = {isa = PBXBuildFile; fileRef = 21AD3720EB4C3ABC81249CCC /* ImageResizing.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		09296FEA47A901177E2493EE /* CollaborativeDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CollaborativeDetailView.swift; sourceTree = "<group>"; };
 		0F0CD85C5A43D3448BD5C5C4 /* CreateWishListSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreateWishListSheet.swift; sourceTree = "<group>"; };
 		13FBE8D2ACEDDE3C21CA1D70 /* WishListDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WishListDetailView.swift; sourceTree = "<group>"; };
-		21AD3720EB4C3ABC81249CCC /* ImageResizing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageResizing.swift; sourceTree = "<group>"; };
 		29B2BA82DA0F3B26AF43F5FF /* ItemTableRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ItemTableRow.swift; sourceTree = "<group>"; };
 		31B9AD6AF2470FF752C11700 /* ItemRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ItemRow.swift; sourceTree = "<group>"; };
 		3417C50D90EA0E935C2FBA9C /* ItemsTableView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ItemsTableView.swift; sourceTree = "<group>"; };
@@ -59,6 +58,7 @@
 		943FA8E5463F00CE0E772B22 /* WishListItemsTableView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WishListItemsTableView.swift; sourceTree = "<group>"; };
 		9EF350105651A867BEE41E7D /* OurWish.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = OurWish.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A42B138F1BB3597D75F2EE6B /* ProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileView.swift; sourceTree = "<group>"; };
+		EA0F505408A72B0AAC3DB924 /* OurWishServer */ = {isa = PBXFileReference; lastKnownFileType = folder; name = OurWishServer; path = OurWishServer; sourceTree = SOURCE_ROOT; };
 		F7917A630D73C687785997AB /* LoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginView.swift; sourceTree = "<group>"; };
 		F9A6783464603BD625FB763E /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -69,6 +69,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				52FBB807173A117A8DEF6292 /* OurWishCore in Frameworks */,
+				0D5FC54BEF24BA1FDD373E86 /* OurWishServer in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -101,7 +102,6 @@
 		2461A8B7737CFEB00D9D0844 /* Profile */ = {
 			isa = PBXGroup;
 			children = (
-				21AD3720EB4C3ABC81249CCC /* ImageResizing.swift */,
 				A42B138F1BB3597D75F2EE6B /* ProfileView.swift */,
 			);
 			path = Profile;
@@ -111,6 +111,7 @@
 			isa = PBXGroup;
 			children = (
 				41ADD015A69BD5FC787A5BD6 /* OurWishCore */,
+				EA0F505408A72B0AAC3DB924 /* OurWishServer */,
 			);
 			name = Packages;
 			sourceTree = "<group>";
@@ -205,6 +206,7 @@
 			name = OurWish;
 			packageProductDependencies = (
 				D2F0CBF2AA5EA32A065F49BD /* OurWishCore */,
+				54F84EF8902C103CDA11C2B9 /* OurWishServer */,
 			);
 			productName = OurWish;
 			productReference = 9EF350105651A867BEE41E7D /* OurWish.app */;
@@ -235,6 +237,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				CB4367C78FB3FB67D4402595 /* XCLocalSwiftPackageReference "OurWishCore" */,
+				5F34C09429173DEA2AC422E6 /* XCLocalSwiftPackageReference "OurWishServer" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 3EBAAB6069B006CE4090BB6A /* Products */;
@@ -270,7 +273,6 @@
 				B01F1E709DF8EB69CFCE70AB /* CreateWishListSheet.swift in Sources */,
 				B853A648577ACEBF591CA088 /* CurrencyFormatting.swift in Sources */,
 				D0D230BA632D2DBED1B071CF /* EditableListNameView.swift in Sources */,
-				F9178FAC9EC41158E04F90C6 /* ImageResizing.swift in Sources */,
 				F3EC3971EB4DAAE19FEBADAC /* ItemDraft.swift in Sources */,
 				776B4BE9E10326D623DBD38E /* ItemRow.swift in Sources */,
 				C62E84AD2A0CC0CA0F3169B9 /* ItemTableRow.swift in Sources */,
@@ -484,6 +486,10 @@
 /* End XCConfigurationList section */
 
 /* Begin XCLocalSwiftPackageReference section */
+		5F34C09429173DEA2AC422E6 /* XCLocalSwiftPackageReference "OurWishServer" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = OurWishServer;
+		};
 		CB4367C78FB3FB67D4402595 /* XCLocalSwiftPackageReference "OurWishCore" */ = {
 			isa = XCLocalSwiftPackageReference;
 			relativePath = OurWishCore;
@@ -491,6 +497,10 @@
 /* End XCLocalSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		54F84EF8902C103CDA11C2B9 /* OurWishServer */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = OurWishServer;
+		};
 		D2F0CBF2AA5EA32A065F49BD /* OurWishCore */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = OurWishCore;

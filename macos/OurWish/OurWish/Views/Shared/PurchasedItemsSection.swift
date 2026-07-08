@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 
 /// The collapsible "Purchased Items" list — replaces the `<Collapse>` block in
@@ -20,6 +21,15 @@ struct PurchasedItemsSection: View {
                         )
                         .labelsHidden()
                         .toggleStyle(.checkbox)
+
+                        if let imageData = item.imageData, let nsImage = NSImage(data: imageData) {
+                            Image(nsImage: nsImage)
+                                .resizable()
+                                .scaledToFill()
+                                .frame(width: 24, height: 24)
+                                .clipShape(RoundedRectangle(cornerRadius: 5))
+                                .overlay(RoundedRectangle(cornerRadius: 5).strokeBorder(.separator, lineWidth: 0.5))
+                        }
 
                         Text("\(item.productName) — \(item.quantity) x \(item.price.currencyFormatted) = \(item.lineTotal.currencyFormatted)")
 
