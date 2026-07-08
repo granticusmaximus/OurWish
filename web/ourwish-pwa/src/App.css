@@ -482,6 +482,27 @@ table.items-table tfoot td {
   gap: 0.5rem;
 }
 
+.item-product-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.item-meta-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
+.item-meta-chip {
+  font-size: 0.68rem;
+  line-height: 1.2;
+  color: var(--text-secondary);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 0.08rem 0.4rem;
+}
 .item-thumb {
   width: 28px;
   height: 28px;

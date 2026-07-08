@@ -138,6 +138,18 @@ function parsedDraft(draft: Draft): ItemInput | null {
   }
 }
 
+function metadataSummary(item: Item): string[] {
+  const chips: string[] = []
+  if (item.manufacturer) chips.push(item.manufacturer)
+  if (item.category) chips.push(item.category)
+  if (item.availabilityStatus) chips.push(item.availabilityStatus)
+  if (item.msrp != null) chips.push(`MSRP ${formatCurrency(item.msrp)}`)
+  if (item.purpose) chips.push(item.purpose)
+  if (item.caliber) chips.push(item.caliber)
+  if (item.compatibility) chips.push(item.compatibility)
+  return chips
+}
+
 // Mirrors macos/OurWish/OurWish/Views/Shared/ItemsTableView.swift.
 export function ItemsTable({
   title,
@@ -226,6 +238,9 @@ export function ItemsTable({
 
   const renderRow = (item: Item) => {
     const isEditing = editingId === item.id
+    const allMetadataChips = metadataSummary(item)
+    const metadataChips = allMetadataChips.slice(0, 4)
+    const hiddenMetadataCount = Math.max(allMetadataChips.length - metadataChips.length, 0)
     const lineTotal = isEditing
       ? (Number(draft.price) || item.price) * (Number(draft.quantity) || item.quantity)
       : item.price * item.quantity
@@ -382,7 +397,19 @@ export function ItemsTable({
           ) : (
             <div className="item-product-cell">
               {item.imageURL && <img className="item-thumb" src={item.imageURL} alt="" />}
-              <span>{item.productName}</span>
+              <div className="item-product-details">
+                <span>{item.productName}</span>
+                {metadataChips.length > 0 && (
+                  <div className="item-meta-summary">
+                    {metadataChips.map((chip, index) => (
+                      <span key={`${chip}-${index}`} className="item-meta-chip">
+                        {chip}
+                      </span>
+                    ))}
+                    {hiddenMetadataCount > 0 && <span className="item-meta-chip">+{hiddenMetadataCount} more</span>}
+                  </div>
+                )}
+              </div>
             </div>
           )}
         </td>
