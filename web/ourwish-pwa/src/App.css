@@ -130,6 +130,94 @@
   display: none;
 }
 
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.menu-wrap {
+  position: relative;
+}
+
+.menu-panel {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 0.5rem);
+  width: 230px;
+  padding: 0.4rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.16);
+  z-index: 30;
+}
+
+.menu-panel-account {
+  width: 280px;
+}
+
+.menu-item {
+  width: 100%;
+  text-align: left;
+  border: none;
+  background: none;
+  color: var(--text);
+  font-size: 0.92rem;
+  padding: 0.65rem 0.7rem;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.menu-item:hover:not(:disabled) {
+  background: var(--surface-secondary);
+}
+
+.menu-item:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.menu-item-danger {
+  color: var(--danger);
+}
+
+.menu-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 0.35rem 0;
+}
+
+.menu-note {
+  margin: 0.25rem 0 0.45rem;
+  padding: 0 0.7rem;
+  font-size: 0.76rem;
+  line-height: 1.45;
+  color: var(--text-secondary);
+}
+
+.account-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.account-avatar {
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  object-fit: cover;
+  border: 1px solid var(--border);
+}
+
+.account-avatar-fallback {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface-secondary);
+  font-size: 0.85rem;
+}
+
 .app-body {
   flex: 1;
   display: flex;
@@ -207,9 +295,31 @@
   margin: 0;
 }
 
+.detail-meta {
+  margin: 0.35rem 0 0;
+  color: var(--text-secondary);
+  font-size: 0.92rem;
+}
+
 .detail-actions {
   display: flex;
   gap: 0.5rem;
+}
+
+.shell-flash {
+  padding: 0.75rem 1rem;
+  font-size: 0.88rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.shell-flash-success {
+  background: color-mix(in srgb, var(--success) 12%, var(--surface));
+  color: var(--success);
+}
+
+.shell-flash-error {
+  background: color-mix(in srgb, var(--danger) 12%, var(--surface));
+  color: var(--danger);
 }
 
 .empty-state {
@@ -228,6 +338,19 @@
 }
 
 @media (max-width: 768px) {
+  .app-header {
+    flex-wrap: wrap;
+  }
+
+  .header-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  .account-name {
+    display: none;
+  }
+
   .sidebar,
   .detail-pane {
     width: 100%;
@@ -260,9 +383,17 @@
   display: flex;
   align-items: center;
   gap: 0.6rem;
+  justify-content: space-between;
+  flex-wrap: wrap;
   margin-bottom: 0.75rem;
   color: var(--text-secondary);
   font-size: 0.85rem;
+}
+
+.rename-form {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
 }
 
 .items-table-wrap {
@@ -394,6 +525,13 @@ table.items-table tfoot td {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
+}
+
+.modal-note {
+  margin: 0;
+  font-size: 0.84rem;
+  line-height: 1.45;
+  color: var(--text-secondary);
 }
 
 .modal-footer {

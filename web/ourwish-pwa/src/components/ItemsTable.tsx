@@ -141,6 +141,7 @@ export function ItemsTable({
           {isEditing ? (
             <input
               className="row-input"
+              aria-label="Product name"
               value={draft.productName}
               onChange={(event) => setDraft({ ...draft, productName: event.target.value })}
             />
@@ -155,6 +156,7 @@ export function ItemsTable({
           {isEditing ? (
             <input
               className="row-input"
+              aria-label="Quantity"
               value={draft.quantity}
               onChange={(event) => setDraft({ ...draft, quantity: event.target.value })}
             />
@@ -166,6 +168,7 @@ export function ItemsTable({
           {isEditing ? (
             <input
               className="row-input"
+              aria-label="Price"
               value={draft.price}
               onChange={(event) => setDraft({ ...draft, price: event.target.value })}
             />
@@ -173,13 +176,13 @@ export function ItemsTable({
             formatCurrency(item.price)
           )}
         </td>
-        {!isEditing && <td>{formatCurrency(lineTotal)}</td>}
-        {isEditing && <td>{formatCurrency(lineTotal)}</td>}
+        <td>{formatCurrency(lineTotal)}</td>
         {showUrlColumn && (
           <td>
             {isEditing ? (
               <input
                 className="row-input"
+                aria-label="Product URL"
                 value={draft.url}
                 onChange={(event) => setDraft({ ...draft, url: event.target.value })}
               />
@@ -283,7 +286,7 @@ export function ItemsTable({
     <div className="items-card">
       <div className="items-card-header">
         {allowRename && isRenaming ? (
-          <form onSubmit={commitRename} style={{ display: 'flex', gap: '0.4rem' }}>
+          <form onSubmit={commitRename} className="rename-form">
             <input
               className="row-input"
               value={renameDraft}
