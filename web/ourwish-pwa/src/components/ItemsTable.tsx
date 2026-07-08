@@ -42,46 +42,99 @@ interface ItemsTableProps {
 
 interface Draft {
   productName: string
+  category: string
+  manufacturer: string
   price: string
+  msrp: string
   quantity: string
   url: string
+  officialProductURL: string
+  bestRetailerURL: string
+  primaryImageURL: string
+  itemDescription: string
+  specifications: string
+  weight: string
+  caliber: string
+  compatibility: string
+  purpose: string
+  notes: string
+  availabilityStatus: string
+  dateRetrieved: string
+}
+
+function toOptional(value: string): string | null {
+  const trimmed = value.trim()
+  return trimmed ? trimmed : null
+}
+
+function normalizeDateInput(value: string | null | undefined): string {
+  if (!value) return ''
+  const match = value.match(/^(\d{4}-\d{2}-\d{2})/)
+  return match ? match[1] : value
 }
 
 function draftFrom(item: Item): Draft {
   return {
     productName: item.productName,
+    category: item.category ?? '',
+    manufacturer: item.manufacturer ?? '',
     price: item.price.toFixed(2),
+    msrp: item.msrp?.toFixed(2) ?? '',
     quantity: String(item.quantity),
     url: item.url ?? '',
+    officialProductURL: item.officialProductURL ?? '',
+    bestRetailerURL: item.bestRetailerURL ?? '',
+    primaryImageURL: item.primaryImageURL ?? '',
+    itemDescription: item.itemDescription ?? '',
+    specifications: item.specifications ?? '',
+    weight: item.weight ?? '',
+    caliber: item.caliber ?? '',
+    compatibility: item.compatibility ?? '',
+    purpose: item.purpose ?? '',
+    notes: item.notes ?? '',
+    availabilityStatus: item.availabilityStatus ?? '',
+    dateRetrieved: normalizeDateInput(item.dateRetrieved),
   }
 }
 
-function parsedDraft(draft: Draft, existingItem: Item): ItemInput | null {
+function parsedDraft(draft: Draft): ItemInput | null {
   const price = Number(draft.price)
   const quantity = Number(draft.quantity)
+  const trimmedMsrp = draft.msrp.trim()
+  const msrp = trimmedMsrp ? Number(trimmedMsrp) : null
+  const trimmedDate = draft.dateRetrieved.trim()
+  const dateRetrieved = trimmedDate ? trimmedDate : null
+
   if (!draft.productName.trim() || Number.isNaN(price) || !Number.isInteger(quantity) || quantity < 1) {
     return null
   }
+  if (trimmedMsrp && Number.isNaN(msrp)) {
+    return null
+  }
+  if (trimmedDate && !/^\d{4}-\d{2}-\d{2}$/.test(trimmedDate)) {
+    return null
+  }
+
   return {
     productName: draft.productName.trim(),
-    category: existingItem.category,
-    manufacturer: existingItem.manufacturer,
+    category: toOptional(draft.category),
+    manufacturer: toOptional(draft.manufacturer),
     price,
-    msrp: existingItem.msrp,
+    msrp,
     quantity,
-    url: draft.url.trim() ? draft.url.trim() : null,
-    officialProductURL: existingItem.officialProductURL,
-    bestRetailerURL: existingItem.bestRetailerURL,
-    primaryImageURL: existingItem.primaryImageURL,
-    itemDescription: existingItem.itemDescription,
-    specifications: existingItem.specifications,
-    weight: existingItem.weight,
-    caliber: existingItem.caliber,
-    compatibility: existingItem.compatibility,
-    purpose: existingItem.purpose,
-    notes: existingItem.notes,
-    availabilityStatus: existingItem.availabilityStatus,
-    dateRetrieved: existingItem.dateRetrieved,
+    url: toOptional(draft.url),
+    officialProductURL: toOptional(draft.officialProductURL),
+    bestRetailerURL: toOptional(draft.bestRetailerURL),
+    primaryImageURL: toOptional(draft.primaryImageURL),
+    itemDescription: toOptional(draft.itemDescription),
+    specifications: toOptional(draft.specifications),
+    weight: toOptional(draft.weight),
+    caliber: toOptional(draft.caliber),
+    compatibility: toOptional(draft.compatibility),
+    purpose: toOptional(draft.purpose),
+    notes: toOptional(draft.notes),
+    availabilityStatus: toOptional(draft.availabilityStatus),
+    dateRetrieved,
   }
 }
 
@@ -100,7 +153,27 @@ export function ItemsTable({
   onDelete,
 }: ItemsTableProps) {
   const [editingId, setEditingId] = useState<number | null>(null)
-  const [draft, setDraft] = useState<Draft>({ productName: '', price: '', quantity: '', url: '' })
+  const [draft, setDraft] = useState<Draft>({
+    productName: '',
+    category: '',
+    manufacturer: '',
+    price: '',
+    msrp: '',
+    quantity: '',
+    url: '',
+    officialProductURL: '',
+    bestRetailerURL: '',
+    primaryImageURL: '',
+    itemDescription: '',
+    specifications: '',
+    weight: '',
+    caliber: '',
+    compatibility: '',
+    purpose: '',
+    notes: '',
+    availabilityStatus: '',
+    dateRetrieved: '',
+  })
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [isRenaming, setIsRenaming] = useState(false)
   const [renameDraft, setRenameDraft] = useState(title)
@@ -130,9 +203,9 @@ export function ItemsTable({
   }
 
   const saveEdit = async (item: Item) => {
-    const parsed = parsedDraft(draft, item)
+    const parsed = parsedDraft(draft)
     if (!parsed) {
-      setErrorMessage('Please enter a valid product name, price, and quantity')
+      setErrorMessage('Please enter valid values (name, price, quantity, MSRP if set, and YYYY-MM-DD date)')
       return
     }
     await runAction(async () => {
@@ -169,12 +242,143 @@ export function ItemsTable({
         </td>
         <td>
           {isEditing ? (
-            <input
-              className="row-input"
-              aria-label="Product name"
-              value={draft.productName}
-              onChange={(event) => setDraft({ ...draft, productName: event.target.value })}
-            />
+            <div className="item-edit-stack">
+              <input
+                className="row-input"
+                aria-label="Product name"
+                value={draft.productName}
+                onChange={(event) => setDraft({ ...draft, productName: event.target.value })}
+              />
+              <details className="metadata-editor">
+                <summary>Metadata</summary>
+                <div className="metadata-grid">
+                  <label>
+                    <span>Category</span>
+                    <input
+                      className="row-input"
+                      value={draft.category}
+                      onChange={(event) => setDraft({ ...draft, category: event.target.value })}
+                    />
+                  </label>
+                  <label>
+                    <span>Manufacturer</span>
+                    <input
+                      className="row-input"
+                      value={draft.manufacturer}
+                      onChange={(event) => setDraft({ ...draft, manufacturer: event.target.value })}
+                    />
+                  </label>
+                  <label>
+                    <span>MSRP</span>
+                    <input
+                      className="row-input"
+                      value={draft.msrp}
+                      onChange={(event) => setDraft({ ...draft, msrp: event.target.value })}
+                    />
+                  </label>
+                  <label>
+                    <span>Availability</span>
+                    <input
+                      className="row-input"
+                      value={draft.availabilityStatus}
+                      onChange={(event) => setDraft({ ...draft, availabilityStatus: event.target.value })}
+                    />
+                  </label>
+                  <label>
+                    <span>Purpose</span>
+                    <input
+                      className="row-input"
+                      value={draft.purpose}
+                      onChange={(event) => setDraft({ ...draft, purpose: event.target.value })}
+                    />
+                  </label>
+                  <label>
+                    <span>Weight</span>
+                    <input
+                      className="row-input"
+                      value={draft.weight}
+                      onChange={(event) => setDraft({ ...draft, weight: event.target.value })}
+                    />
+                  </label>
+                  <label>
+                    <span>Caliber</span>
+                    <input
+                      className="row-input"
+                      value={draft.caliber}
+                      onChange={(event) => setDraft({ ...draft, caliber: event.target.value })}
+                    />
+                  </label>
+                  <label>
+                    <span>Compatibility</span>
+                    <input
+                      className="row-input"
+                      value={draft.compatibility}
+                      onChange={(event) => setDraft({ ...draft, compatibility: event.target.value })}
+                    />
+                  </label>
+                  <label>
+                    <span>Date Retrieved</span>
+                    <input
+                      className="row-input"
+                      placeholder="YYYY-MM-DD"
+                      value={draft.dateRetrieved}
+                      onChange={(event) => setDraft({ ...draft, dateRetrieved: event.target.value })}
+                    />
+                  </label>
+                  <label className="metadata-url-field">
+                    <span>Official URL</span>
+                    <input
+                      className="row-input"
+                      value={draft.officialProductURL}
+                      onChange={(event) => setDraft({ ...draft, officialProductURL: event.target.value })}
+                    />
+                  </label>
+                  <label className="metadata-url-field">
+                    <span>Retailer URL</span>
+                    <input
+                      className="row-input"
+                      value={draft.bestRetailerURL}
+                      onChange={(event) => setDraft({ ...draft, bestRetailerURL: event.target.value })}
+                    />
+                  </label>
+                  <label className="metadata-url-field">
+                    <span>Primary Image URL</span>
+                    <input
+                      className="row-input"
+                      value={draft.primaryImageURL}
+                      onChange={(event) => setDraft({ ...draft, primaryImageURL: event.target.value })}
+                    />
+                  </label>
+                  <label className="metadata-textarea-field">
+                    <span>Description</span>
+                    <textarea
+                      className="row-input"
+                      rows={3}
+                      value={draft.itemDescription}
+                      onChange={(event) => setDraft({ ...draft, itemDescription: event.target.value })}
+                    />
+                  </label>
+                  <label className="metadata-textarea-field">
+                    <span>Specifications</span>
+                    <textarea
+                      className="row-input"
+                      rows={3}
+                      value={draft.specifications}
+                      onChange={(event) => setDraft({ ...draft, specifications: event.target.value })}
+                    />
+                  </label>
+                  <label className="metadata-textarea-field">
+                    <span>Notes</span>
+                    <textarea
+                      className="row-input"
+                      rows={3}
+                      value={draft.notes}
+                      onChange={(event) => setDraft({ ...draft, notes: event.target.value })}
+                    />
+                  </label>
+                </div>
+              </details>
+            </div>
           ) : (
             <div className="item-product-cell">
               {item.imageURL && <img className="item-thumb" src={item.imageURL} alt="" />}
