@@ -1,0 +1,98 @@
+import SwiftUI
+
+/// One line-item row, in either display or inline-edit mode. Shared by the personal and
+/// collaborative item tables (configured via `ItemsTableConfig`) so the row layout and
+/// edit/delete/purchase/hide behavior isn't duplicated per item type.
+struct ItemTableRow: View {
+    let item: ItemRow
+    let config: ItemsTableConfig
+    let isEditing: Bool
+    @Binding var draft: ItemDraft
+
+    var onStartEdit: () -> Void
+    var onSave: () -> Void
+    var onCancelEdit: () -> Void
+    var onTogglePurchased: (Bool) -> Void
+    var onDelete: () -> Void
+    var onToggleHidden: (() -> Void)?
+
+    var body: some View {
+        GridRow {
+            Toggle(
+                "",
+                isOn: Binding(get: { item.isPurchased }, set: { onTogglePurchased($0) })
+            )
+            .labelsHidden()
+            .toggleStyle(.checkbox)
+
+            if isEditing {
+                TextField("Product name", text: $draft.productName)
+            } else {
+                Text(item.productName)
+            }
+
+            if isEditing {
+                TextField("Qty", text: $draft.quantity)
+                    .frame(width: 50)
+            } else {
+                Text("\(item.quantity)")
+            }
+
+            if isEditing {
+                TextField("Price", text: $draft.price)
+                    .frame(width: 80)
+            } else {
+                Text(item.price.currencyFormatted)
+            }
+
+            Text(lineTotal.currencyFormatted)
+
+            if config.showURLColumn {
+                if isEditing {
+                    TextField("URL", text: $draft.url)
+                } else if let url = item.url, let link = URL(string: url) {
+                    Link("Link", destination: link)
+                } else {
+                    Text("-").foregroundStyle(.secondary)
+                }
+            }
+
+            HStack(spacing: 8) {
+                if isEditing {
+                    Button("Save", action: onSave)
+                        .disabled(!draft.isValid)
+                    Button("Cancel", action: onCancelEdit)
+                } else {
+                    Button {
+                        onStartEdit()
+                    } label: {
+                        Image(systemName: "pencil")
+                    }
+                    .help("Edit")
+
+                    Button(role: .destructive) {
+                        onDelete()
+                    } label: {
+                        Image(systemName: "trash")
+                    }
+                    .help("Delete")
+
+                    if config.allowHideToggle, let onToggleHidden {
+                        Button {
+                            onToggleHidden()
+                        } label: {
+                            Image(systemName: item.isHidden ? "eye" : "eye.slash")
+                        }
+                        .help(item.isHidden ? "Show" : "Hide")
+                    }
+                }
+            }
+            .buttonStyle(.borderless)
+        }
+    }
+
+    private var lineTotal: Double {
+        guard isEditing else { return item.lineTotal }
+        return (draft.parsedPrice ?? item.price) * Double(draft.parsedQuantity ?? item.quantity)
+    }
+}

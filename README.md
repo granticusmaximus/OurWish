@@ -1,73 +1,21 @@
-# React + TypeScript + Vite
+# OurWish
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A native macOS wish-list app, built with Swift, SwiftUI, and [GRDB.swift](https://github.com/groue/GRDB.swift) over a local SQLite database. No server, no network layer — everything runs on-device.
 
-Currently, two official plugins are available:
+Originally a React + Express + Electron app; that stack has been fully replaced by the native app under `macos/OurWish/`.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## Project layout
 
-## React Compiler
+- `macos/OurWish/OurWishCore/` — Swift Package containing the data layer: SQLite schema/migrations, password hashing, models, repositories, and `@Observable` stores. Has no UI dependencies, so it builds and its checks run with just Xcode Command Line Tools (`swift build`, `swift run SmokeTest`).
+- `macos/OurWish/OurWish.xcodeproj` — the SwiftUI app target, generated from `macos/OurWish/project.yml` via [XcodeGen](https://github.com/yonaskolb/XcodeGen). Regenerate after editing `project.yml` with:
+  ```
+  cd macos/OurWish && xcodegen generate
+  ```
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Data
 
-## Expanding the ESLint configuration
+The app reads and writes `~/Library/Application Support/OurWish/ourwish.db`, regardless of whether it's launched from Xcode (Debug) or run as an installed app (Release) — both use the exact same file, since the app runs without App Sandbox enabled. On first launch with an empty database, a default user and wish list are seeded automatically.
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## Running
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
-
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+Requires the full Xcode app (not just Command Line Tools) to build and run the `OurWish` target. Open `macos/OurWish/OurWish.xcodeproj` and run the `OurWish` scheme.

@@ -1,0 +1,50 @@
+name: OurWish
+options:
+  bundleIdPrefix: com.gwsapp
+  deploymentTarget:
+    macOS: "14.0"
+  createIntermediateGroups: true
+
+packages:
+  OurWishCore:
+    path: OurWishCore
+
+targets:
+  OurWish:
+    type: application
+    platform: macOS
+    sources:
+      - path: OurWish
+        excludes:
+          - "**/.DS_Store"
+    dependencies:
+      - package: OurWishCore
+        product: OurWishCore
+    settings:
+      base:
+        PRODUCT_NAME: OurWish
+        PRODUCT_BUNDLE_IDENTIFIER: com.gwsapp.OurWish
+        MARKETING_VERSION: "1.0"
+        CURRENT_PROJECT_VERSION: "1"
+        SWIFT_VERSION: "6.0"
+        MACOSX_DEPLOYMENT_TARGET: "14.0"
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_CFBundleDisplayName: OurWish
+        INFOPLIST_KEY_NSHumanReadableCopyright: ""
+        INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.lifestyle
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ENABLE_PREVIEWS: YES
+        # Deliberately no CODE_SIGN_ENTITLEMENTS / App Sandbox capability: the app
+        # reads/writes ~/Library/Application Support/OurWish/ourwish.db directly, and
+        # sandboxing would redirect that path to a per-container location instead.
+        CODE_SIGN_STYLE: Automatic
+
+schemes:
+  OurWish:
+    build:
+      targets:
+        OurWish: all
+    run:
+      config: Debug
+    test:
+      config: Debug
