@@ -33,7 +33,10 @@ let package = Package(
         // without Xcode.
         .executableTarget(
             name: "RunServer",
-            dependencies: ["OurWishServer"]
+            dependencies: [
+                "OurWishServer",
+                .product(name: "OurWishCore", package: "OurWishCore")
+            ]
         )
     ]
 )

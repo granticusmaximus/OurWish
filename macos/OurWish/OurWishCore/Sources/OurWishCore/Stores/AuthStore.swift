@@ -52,6 +52,7 @@ public final class AuthStore {
         firstName: String,
         lastName: String,
         displayName: String,
+        email: String,
         bio: String?,
         profileImageData: Data?
     ) async throws {
@@ -61,6 +62,7 @@ public final class AuthStore {
             firstName: firstName,
             lastName: lastName,
             displayName: displayName,
+            email: email,
             bio: bio,
             profileImageData: profileImageData
         )
@@ -69,6 +71,14 @@ public final class AuthStore {
     public func changePassword(currentPassword: String, newPassword: String) async throws {
         guard let userId = currentUser?.id else { return }
         try await service.changePassword(userId: userId, currentPassword: currentPassword, newPassword: newPassword)
+    }
+
+    /// Deletes the account outright and clears local session state. Irreversible —
+    /// callers are expected to confirm with the user before calling this.
+    public func deleteAccount() async throws {
+        guard let userId = currentUser?.id else { return }
+        try await service.deleteAccount(userId: userId)
+        currentUser = nil
     }
 }
 #endif

@@ -12,6 +12,7 @@ struct ProfileView: View {
     @State private var firstName = ""
     @State private var lastName = ""
     @State private var displayName = ""
+    @State private var email = ""
     @State private var bio = ""
     @State private var profileImageData: Data?
     @State private var isImporterPresented = false
@@ -26,6 +27,10 @@ struct ProfileView: View {
     @State private var passwordSuccessMessage: String?
     @State private var isChangingPassword = false
 
+    @State private var showDeleteAccountConfirm = false
+    @State private var deleteAccountErrorMessage: String?
+    @State private var isDeletingAccount = false
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 28) {
@@ -33,10 +38,12 @@ struct ProfileView: View {
                 profileSection
                 Divider()
                 passwordSection
+                Divider()
+                deleteAccountSection
             }
             .padding(28)
         }
-        .frame(width: 480, height: 680)
+        .frame(width: 480, height: 720)
         .onAppear(perform: loadCurrentUser)
     }
 
@@ -79,6 +86,7 @@ struct ProfileView: View {
                 LabeledField("Last Name") { TextField("", text: $lastName) }
             }
             LabeledField("Display Name") { TextField("", text: $displayName) }
+            LabeledField("Email") { TextField("", text: $email) }
             LabeledField("Bio") {
                 TextEditor(text: $bio)
                     .font(.body)
@@ -166,6 +174,7 @@ struct ProfileView: View {
         !firstName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
             && !lastName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
             && !displayName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            && !email.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
     private var isPasswordFormValid: Bool {
@@ -177,6 +186,7 @@ struct ProfileView: View {
         firstName = user.firstName
         lastName = user.lastName
         displayName = user.displayName
+        email = user.email
         bio = user.bio ?? ""
         profileImageData = user.profileImageData
     }
@@ -189,6 +199,7 @@ struct ProfileView: View {
                     firstName: firstName,
                     lastName: lastName,
                     displayName: displayName,
+                    email: email,
                     bio: bio.isEmpty ? nil : bio,
                     profileImageData: profileImageData
                 )
@@ -223,6 +234,51 @@ struct ProfileView: View {
                 passwordSuccessMessage = nil
             }
             isChangingPassword = false
+        }
+    }
+
+    private var deleteAccountSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Delete Account")
+                .font(.headline)
+
+            Text("Permanently deletes your account and everything in it — wish lists, items, and any lists shared with a partner. This can't be undone.")
+                .font(.callout)
+                .foregroundStyle(.secondary)
+
+            if let deleteAccountErrorMessage {
+                Label(deleteAccountErrorMessage, systemImage: "exclamationmark.triangle.fill")
+                    .foregroundStyle(.red)
+                    .font(.callout)
+            }
+
+            Button(isDeletingAccount ? "Deleting…" : "Delete Account", role: .destructive) {
+                showDeleteAccountConfirm = true
+            }
+            .disabled(isDeletingAccount)
+        }
+        .confirmationDialog(
+            "Delete your account?",
+            isPresented: $showDeleteAccountConfirm,
+            titleVisibility: .visible
+        ) {
+            Button("Delete Account", role: .destructive, action: deleteAccount)
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("This permanently deletes your account, your wish lists, and any lists shared with a partner. This can't be undone.")
+        }
+    }
+
+    private func deleteAccount() {
+        isDeletingAccount = true
+        Task { @MainActor in
+            do {
+                try await authStore.deleteAccount()
+                dismiss()
+            } catch {
+                deleteAccountErrorMessage = error.localizedDescription
+            }
+            isDeletingAccount = false
         }
     }
 }

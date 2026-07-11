@@ -189,7 +189,7 @@ do {
 
     let updated = try repo.updateProfile(
         userId: user.id!, firstName: "Jamie", lastName: "Rivera", displayName: "Jam",
-        bio: "Loves board games", profileImageData: imageData
+        email: "a@example.com", bio: "Loves board games", profileImageData: imageData
     )
     check("updateProfile updates display name", updated.displayName == "Jam")
     check("updateProfile updates last name", updated.lastName == "Rivera")
@@ -199,8 +199,65 @@ do {
     let reloaded = try repo.user(id: user.id!)
     try check("updateProfile persists to the database", reloaded?.displayName == "Jam")
 
-    checkThrows("updateProfile rejects blank display name", expected: .invalidInput("First name, last name, and display name are required")) {
-        try repo.updateProfile(userId: user.id!, firstName: "Jamie", lastName: "Rivera", displayName: "  ", bio: nil, profileImageData: nil)
+    checkThrows(
+        "updateProfile rejects blank display name",
+        expected: .invalidInput("First name, last name, display name, and email are required")
+    ) {
+        try repo.updateProfile(
+            userId: user.id!, firstName: "Jamie", lastName: "Rivera", displayName: "  ",
+            email: "a@example.com", bio: nil, profileImageData: nil
+        )
+    }
+
+    let renamed = try repo.updateProfile(
+        userId: user.id!, firstName: "Jamie", lastName: "Rivera", displayName: "Jam",
+        email: "jamie-new@example.com", bio: nil, profileImageData: nil
+    )
+    check("updateProfile updates email", renamed.email == "jamie-new@example.com")
+
+    let other = try insertUser(dbQueue, email: "taken@example.com", password: "secret123")
+    checkThrows("updateProfile rejects an email already used by another user", expected: .emailAlreadyExists) {
+        try repo.updateProfile(
+            userId: other.id!, firstName: "Taken", lastName: "User", displayName: "Taken",
+            email: "JAMIE-NEW@EXAMPLE.COM", bio: nil, profileImageData: nil
+        )
+    }
+}
+
+section("UserRepository: deleteUser")
+do {
+    let dbQueue = try freshDatabase()
+    let user = try insertUser(dbQueue, email: "a@example.com")
+    let partner = try insertUser(dbQueue, email: "b@example.com")
+    let userRepo = UserRepository(dbWriter: dbQueue)
+    let collabRepo = CollaborativeListRepository(dbWriter: dbQueue)
+    let list = try collabRepo.createList(currentUserId: user.id!, partnerEmail: "b@example.com", name: "Shared")
+
+    try userRepo.deleteUser(userId: user.id!)
+    let remainingUsers = try dbQueue.read { try User.fetchAll($0) }
+    check("deleteUser removes the user", remainingUsers.map(\.email) == ["b@example.com"])
+
+    let remainingLists = try dbQueue.read { db in
+        try CollaborativeList.filter(CollaborativeList.Columns.id == list.id!).fetchCount(db)
+    }
+    check("deleteUser cascades their collaborative lists", remainingLists == 0)
+
+    _ = partner
+}
+
+section("UserRepository: resetPassword")
+do {
+    let dbQueue = try freshDatabase()
+    let user = try insertUser(dbQueue, email: "a@example.com", password: "oldpass123")
+    let repo = UserRepository(dbWriter: dbQueue)
+
+    try repo.resetPassword(email: "A@Example.com", newPassword: "newpass456")
+    try check(
+        "resetPassword sets a new password without the old one",
+        repo.login(email: "a@example.com", password: "newpass456").id == user.id
+    )
+    checkThrows("resetPassword fails for an unknown email", expected: .userNotFound) {
+        try repo.resetPassword(email: "nobody@example.com", newPassword: "whatever123")
     }
 }
 

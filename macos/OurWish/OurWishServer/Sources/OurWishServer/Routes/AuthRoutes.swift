@@ -18,6 +18,7 @@ struct UpdateProfileRequest: Codable {
     let firstName: String
     let lastName: String
     let displayName: String
+    let email: String
     let bio: String?
     /// Base64-encoded image bytes. The client resends whatever photo it currently has
     /// loaded (including unchanged), and omits/nils this to remove the photo — there's
@@ -42,6 +43,27 @@ struct AuthRoutes {
                 let user = try userRepository.login(email: body.email, password: body.password)
                 let token = try await tokenStore.issueToken(for: user.id!)
                 return LoginResponseDTO(token: token, user: UserDTO(user))
+            } catch let error as RepositoryError {
+                throw error.httpError
+            }
+        }
+
+        // Unauthenticated, but only ever succeeds once: `/register` requires an
+        // existing session (see the comment on that route below), which is correct for
+        // "invite a second user" but leaves a from-scratch remote deployment with no
+        // way to create its very first account through the API at all. This is that
+        // one-time bootstrap door — it locks itself once any user exists.
+        group.post("/bootstrap") { request, context -> UserDTO in
+            guard try userRepository.count() == 0 else {
+                throw HTTPError(.forbidden, message: "An account already exists — sign in to invite a second user")
+            }
+            let body = try await request.decode(as: RegisterRequest.self, context: context)
+            do {
+                let user = try userRepository.createUser(
+                    firstName: body.firstName, lastName: body.lastName,
+                    email: body.email, password: body.password
+                )
+                return UserDTO(user)
             } catch let error as RepositoryError {
                 throw error.httpError
             }
@@ -94,7 +116,7 @@ struct AuthRoutes {
             do {
                 let user = try userRepository.updateProfile(
                     userId: userId, firstName: body.firstName, lastName: body.lastName,
-                    displayName: body.displayName, bio: body.bio, profileImageData: imageData
+                    displayName: body.displayName, email: body.email, bio: body.bio, profileImageData: imageData
                 )
                 return UserDTO(user)
             } catch let error as RepositoryError {
@@ -121,6 +143,18 @@ struct AuthRoutes {
             return .noContent
         }
 
+        group.delete("/account") { _, context -> HTTPResponse.Status in
+            guard let userId = context.userId else { throw HTTPError(.unauthorized) }
+            do {
+                // `auth_tokens.user_id` cascades on delete, so this also revokes the
+                // requesting token (and any others the user had) — no separate
+                // `tokenStore.revoke` call needed.
+                try userRepository.deleteUser(userId: userId)
+                return .noContent
+            } catch let error as RepositoryError {
+                throw error.httpError
+            }
+        }
     }
 
     /// Mounted separately at `/api/v1/users`, outside the `/api/v1/auth` prefix (this

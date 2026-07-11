@@ -27,6 +27,7 @@ public struct LocalAuthStoreService: AuthStoreService {
         firstName: String,
         lastName: String,
         displayName: String,
+        email: String,
         bio: String?,
         profileImageData: Data?
     ) async throws -> User {
@@ -35,6 +36,7 @@ public struct LocalAuthStoreService: AuthStoreService {
             firstName: firstName,
             lastName: lastName,
             displayName: displayName,
+            email: email,
             bio: bio,
             profileImageData: profileImageData
         )
@@ -42,6 +44,10 @@ public struct LocalAuthStoreService: AuthStoreService {
 
     public func changePassword(userId: Int64, currentPassword: String, newPassword: String) async throws {
         try repository.updatePassword(userId: userId, currentPassword: currentPassword, newPassword: newPassword)
+    }
+
+    public func deleteAccount(userId: Int64) async throws {
+        try repository.deleteUser(userId: userId)
     }
 }
 

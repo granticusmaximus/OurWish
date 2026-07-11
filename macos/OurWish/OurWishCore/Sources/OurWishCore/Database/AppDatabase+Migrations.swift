@@ -121,6 +121,29 @@ extension AppDatabase {
             }
         }
 
+        // Brings `collaborative_items` to parity with `wish_list_items`: hide/show
+        // support and the same rich product metadata columns added in v5.
+        migrator.registerMigration("v6CollaborativeItemParity") { db in
+            try db.alter(table: "collaborative_items") { t in
+                t.add(column: "is_hidden", .boolean).notNull().defaults(to: false)
+                t.add(column: "category", .text)
+                t.add(column: "manufacturer", .text)
+                t.add(column: "msrp", .double)
+                t.add(column: "official_product_url", .text)
+                t.add(column: "best_retailer_url", .text)
+                t.add(column: "primary_image_url", .text)
+                t.add(column: "item_description", .text)
+                t.add(column: "specifications", .text)
+                t.add(column: "weight", .text)
+                t.add(column: "caliber", .text)
+                t.add(column: "compatibility", .text)
+                t.add(column: "purpose", .text)
+                t.add(column: "notes", .text)
+                t.add(column: "availability_status", .text)
+                t.add(column: "date_retrieved", .datetime)
+            }
+        }
+
         return migrator
     }
 }

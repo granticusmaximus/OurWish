@@ -10,10 +10,12 @@ public protocol AuthStoreService: Sendable {
         firstName: String,
         lastName: String,
         displayName: String,
+        email: String,
         bio: String?,
         profileImageData: Data?
     ) async throws -> User
     func changePassword(userId: Int64, currentPassword: String, newPassword: String) async throws
+    func deleteAccount(userId: Int64) async throws
 }
 
 public protocol WishListStoreService: Sendable {

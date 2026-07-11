@@ -143,6 +143,7 @@ public actor RemoteOurWishAPI: AuthStoreService, WishListStoreService, Collabora
         firstName: String,
         lastName: String,
         displayName: String,
+        email: String,
         bio: String?,
         profileImageData: Data?
     ) async throws -> User {
@@ -154,6 +155,7 @@ public actor RemoteOurWishAPI: AuthStoreService, WishListStoreService, Collabora
                 "firstName": firstName,
                 "lastName": lastName,
                 "displayName": displayName,
+                "email": email,
                 "bio": bio,
                 "imageBase64": profileImageData?.base64EncodedString(),
             ]
@@ -168,6 +170,12 @@ public actor RemoteOurWishAPI: AuthStoreService, WishListStoreService, Collabora
             method: "PUT",
             body: ["currentPassword": currentPassword, "newPassword": newPassword]
         )
+    }
+
+    public func deleteAccount(userId: Int64) async throws {
+        _ = userId
+        try await requestNoContent(path: "/api/v1/auth/account", method: "DELETE")
+        bearerToken = nil
     }
 
     public func wishLists(for userId: Int64) async throws -> [WishList] {

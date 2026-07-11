@@ -56,7 +56,8 @@ actor FakeAuthStoreService: AuthStoreService {
     }
 
     func updateProfile(
-        userId: Int64, firstName: String, lastName: String, displayName: String, bio: String?, profileImageData: Data?
+        userId: Int64, firstName: String, lastName: String, displayName: String, email: String,
+        bio: String?, profileImageData: Data?
     ) async throws -> User {
         if let errorToThrow { throw errorToThrow }
         guard let index = users.firstIndex(where: { $0.id == userId }) else {
@@ -65,6 +66,7 @@ actor FakeAuthStoreService: AuthStoreService {
         users[index].firstName = firstName
         users[index].lastName = lastName
         users[index].displayName = displayName
+        users[index].email = email
         users[index].bio = bio
         users[index].profileImageData = profileImageData
         return users[index]
@@ -72,6 +74,11 @@ actor FakeAuthStoreService: AuthStoreService {
 
     func changePassword(userId: Int64, currentPassword: String, newPassword: String) async throws {
         if let errorToThrow { throw errorToThrow }
+    }
+
+    func deleteAccount(userId: Int64) async throws {
+        if let errorToThrow { throw errorToThrow }
+        users.removeAll { $0.id == userId }
     }
 }
 

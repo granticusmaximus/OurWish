@@ -91,16 +91,18 @@ public final class UserRepository: Sendable {
         firstName: String,
         lastName: String,
         displayName: String,
+        email: String,
         bio: String?,
         profileImageData: Data?
     ) throws -> User {
         let trimmedFirstName = firstName.trimmingCharacters(in: .whitespacesAndNewlines)
         let trimmedLastName = lastName.trimmingCharacters(in: .whitespacesAndNewlines)
         let trimmedDisplayName = displayName.trimmingCharacters(in: .whitespacesAndNewlines)
+        let normalizedEmail = email.trimmingCharacters(in: .whitespacesAndNewlines)
         let trimmedBio = bio?.trimmingCharacters(in: .whitespacesAndNewlines)
 
-        guard !trimmedFirstName.isEmpty, !trimmedLastName.isEmpty, !trimmedDisplayName.isEmpty else {
-            throw RepositoryError.invalidInput("First name, last name, and display name are required")
+        guard !trimmedFirstName.isEmpty, !trimmedLastName.isEmpty, !trimmedDisplayName.isEmpty, !normalizedEmail.isEmpty else {
+            throw RepositoryError.invalidInput("First name, last name, display name, and email are required")
         }
 
         return try dbWriter.write { db in
@@ -108,14 +110,56 @@ public final class UserRepository: Sendable {
                 throw RepositoryError.userNotFound
             }
 
+            let existingEmail = try User
+                .filter(sql: "LOWER(email) = LOWER(?) AND id != ?", arguments: [normalizedEmail, userId])
+                .fetchOne(db)
+            guard existingEmail == nil else {
+                throw RepositoryError.emailAlreadyExists
+            }
+
             user.firstName = trimmedFirstName
             user.lastName = trimmedLastName
             user.displayName = trimmedDisplayName
+            user.email = normalizedEmail
             user.bio = (trimmedBio?.isEmpty ?? true) ? nil : trimmedBio
             user.profileImageData = profileImageData
             try user.update(db)
 
             return user
+        }
+    }
+
+    /// Deletes the account outright. Every dependent row (wish lists/items, either side
+    /// of a collaborative list, auth tokens) cascades via the `onDelete: .cascade`
+    /// foreign keys declared in the schema — the existing "deleting a collaborative
+    /// list cascades its items" behavior already proves cascade delete is active here.
+    public func deleteUser(userId: Int64) throws {
+        try dbWriter.write { db in
+            _ = try User.deleteOne(db, key: userId)
+        }
+    }
+
+    /// Sets a user's password without knowing the current one — deliberately not
+    /// exposed over HTTP. The only caller is `RunServer`'s `reset-password` CLI
+    /// command, which stands in for a "forgot password" flow: this app has no email
+    /// infrastructure, so recovery is "ask whoever runs the server to reset it for
+    /// you" rather than a token-based email reset.
+    public func resetPassword(email: String, newPassword: String) throws {
+        let normalizedEmail = email.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !newPassword.isEmpty else {
+            throw RepositoryError.invalidInput("New password is required")
+        }
+
+        try dbWriter.write { db in
+            guard var user = try User
+                .filter(sql: "LOWER(email) = LOWER(?)", arguments: [normalizedEmail])
+                .fetchOne(db)
+            else {
+                throw RepositoryError.userNotFound
+            }
+
+            user.passwordHash = PasswordHasher.hash(newPassword)
+            try user.update(db)
         }
     }
 
