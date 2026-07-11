@@ -8,7 +8,7 @@ import Observation
 #if canImport(Observation)
 @MainActor
 @Observable
-public final class WishListStore {
+public final class WishListStore: ErrorReporting {
     public private(set) var wishLists: [WishList] = []
     public var selectedListId: Int64? {
         didSet {
@@ -127,15 +127,12 @@ public final class WishListStore {
             return
         }
 
-        do {
+        await runCatching {
             let lists = try await service.wishLists(for: userId)
             wishLists = lists
             if selectedListId == nil || !lists.contains(where: { $0.id == selectedListId }) {
                 selectedListId = lists.first?.id
             }
-            lastError = nil
-        } catch {
-            lastError = error.localizedDescription
         }
     }
 
@@ -146,14 +143,11 @@ public final class WishListStore {
             return
         }
 
-        do {
+        await runCatching {
             async let active = service.wishListItems(listId: listId, userId: userId, purchased: false)
             async let purchased = service.wishListItems(listId: listId, userId: userId, purchased: true)
             items = try await active
             purchasedItems = try await purchased
-            lastError = nil
-        } catch {
-            lastError = error.localizedDescription
         }
     }
 }

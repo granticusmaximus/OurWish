@@ -31,30 +31,37 @@ private struct RemoteWishList: Decodable {
     let name: String
 }
 
+/// Holds the item's metadata fields as a single `WishListItemMetadata` (decoded by
+/// delegating to the same flat JSON object it's already reading its own scalar fields
+/// from) instead of separately re-declaring all 15 of them — see that type's `Codable`
+/// conformance, which is also what the server's `ItemDTO` delegates to on the way out.
 private struct RemoteItem: Decodable {
     let id: Int64
     let productName: String
-    let category: String?
-    let manufacturer: String?
     let price: Double
-    let msrp: Double?
     let quantity: Int
     let url: String?
-    let officialProductURL: String?
-    let bestRetailerURL: String?
-    let primaryImageURL: String?
-    let itemDescription: String?
-    let specifications: String?
-    let weight: String?
-    let caliber: String?
-    let compatibility: String?
-    let purpose: String?
-    let notes: String?
-    let availabilityStatus: String?
-    let dateRetrieved: String?
     let isPurchased: Bool
     let isHidden: Bool
     let imageURL: String?
+    let metadata: WishListItemMetadata
+
+    private enum CodingKeys: String, CodingKey {
+        case id, productName, price, quantity, url, isPurchased, isHidden, imageURL
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(Int64.self, forKey: .id)
+        productName = try container.decode(String.self, forKey: .productName)
+        price = try container.decode(Double.self, forKey: .price)
+        quantity = try container.decode(Int.self, forKey: .quantity)
+        url = try container.decodeIfPresent(String.self, forKey: .url)
+        isPurchased = try container.decode(Bool.self, forKey: .isPurchased)
+        isHidden = try container.decode(Bool.self, forKey: .isHidden)
+        imageURL = try container.decodeIfPresent(String.self, forKey: .imageURL)
+        metadata = try WishListItemMetadata(from: decoder)
+    }
 }
 
 private struct RemoteItemsResponse: Decodable {
@@ -86,15 +93,6 @@ public struct RemoteAPIError: LocalizedError {
 }
 
 public actor RemoteOurWishAPI: AuthStoreService, WishListStoreService, CollaborativeStoreService {
-    private static let dateOnlyFormatter: DateFormatter = {
-        let formatter = DateFormatter()
-        formatter.calendar = Calendar(identifier: .iso8601)
-        formatter.locale = Locale(identifier: "en_US_POSIX")
-        formatter.timeZone = TimeZone(secondsFromGMT: 0)
-        formatter.dateFormat = "yyyy-MM-dd"
-        return formatter
-    }()
-
     private let baseURL: URL
     private let session: URLSession
     private var bearerToken: String?
@@ -212,31 +210,21 @@ public actor RemoteOurWishAPI: AuthStoreService, WishListStoreService, Collabora
         imageData: Data?,
         metadata: WishListItemMetadata
     ) async throws -> WishListItem {
-        _ = imageData
+        var body: [String: Any?] = [
+            "productName": productName,
+            "price": price,
+            "quantity": quantity,
+            "url": url,
+            "imageBase64": imageData?.base64EncodedString(),
+            "clientResolvedImage": true,
+        ]
+        for (key, value) in try metadataJSONFields(metadata) {
+            body[key] = value
+        }
         let response: RemoteItem = try await request(
             path: "/api/v1/wishlists/\(listId)/items",
             method: "POST",
-            body: [
-                "productName": productName,
-                "category": metadata.category,
-                "manufacturer": metadata.manufacturer,
-                "price": price,
-                "msrp": metadata.msrp,
-                "quantity": quantity,
-                "url": url,
-                "officialProductURL": metadata.officialProductURL,
-                "bestRetailerURL": metadata.bestRetailerURL,
-                "primaryImageURL": metadata.primaryImageURL,
-                "itemDescription": metadata.itemDescription,
-                "specifications": metadata.specifications,
-                "weight": metadata.weight,
-                "caliber": metadata.caliber,
-                "compatibility": metadata.compatibility,
-                "purpose": metadata.purpose,
-                "notes": metadata.notes,
-                "availabilityStatus": metadata.availabilityStatus,
-                "dateRetrieved": metadata.dateRetrieved.map { Self.dateOnlyFormatter.string(from: $0) },
-            ]
+            body: body
         )
         return await makeWishListItem(from: response, listId: listId, userId: userId)
     }
@@ -251,31 +239,16 @@ public actor RemoteOurWishAPI: AuthStoreService, WishListStoreService, Collabora
         metadata: WishListItemMetadata
     ) async throws {
         _ = userId
-        try await requestNoContent(
-            path: "/api/v1/items/\(itemId)",
-            method: "PUT",
-            body: [
-                "productName": productName,
-                "category": metadata.category,
-                "manufacturer": metadata.manufacturer,
-                "price": price,
-                "msrp": metadata.msrp,
-                "quantity": quantity,
-                "url": url,
-                "officialProductURL": metadata.officialProductURL,
-                "bestRetailerURL": metadata.bestRetailerURL,
-                "primaryImageURL": metadata.primaryImageURL,
-                "itemDescription": metadata.itemDescription,
-                "specifications": metadata.specifications,
-                "weight": metadata.weight,
-                "caliber": metadata.caliber,
-                "compatibility": metadata.compatibility,
-                "purpose": metadata.purpose,
-                "notes": metadata.notes,
-                "availabilityStatus": metadata.availabilityStatus,
-                "dateRetrieved": metadata.dateRetrieved.map { Self.dateOnlyFormatter.string(from: $0) },
-            ]
-        )
+        var body: [String: Any?] = [
+            "productName": productName,
+            "price": price,
+            "quantity": quantity,
+            "url": url,
+        ]
+        for (key, value) in try metadataJSONFields(metadata) {
+            body[key] = value
+        }
+        try await requestNoContent(path: "/api/v1/items/\(itemId)", method: "PUT", body: body)
     }
 
     public func setWishListItemPurchased(itemId: Int64, userId: Int64, isPurchased: Bool) async throws {
@@ -361,11 +334,17 @@ public actor RemoteOurWishAPI: AuthStoreService, WishListStoreService, Collabora
         imageData: Data?
     ) async throws -> CollaborativeItem {
         _ = userId
-        _ = imageData
         let response: RemoteItem = try await request(
             path: "/api/v1/collaborative/lists/\(listId)/items",
             method: "POST",
-            body: ["productName": productName, "price": price, "quantity": quantity, "url": url]
+            body: [
+                "productName": productName,
+                "price": price,
+                "quantity": quantity,
+                "url": url,
+                "imageBase64": imageData?.base64EncodedString(),
+                "clientResolvedImage": true,
+            ]
         )
         return await makeCollaborativeItem(from: response, listId: listId)
     }
@@ -462,6 +441,14 @@ public actor RemoteOurWishAPI: AuthStoreService, WishListStoreService, Collabora
         dictionary.compactMapValues { $0 }
     }
 
+    /// Flattens `metadata`'s fields (via its own `Codable` conformance) into a plain
+    /// dictionary suitable for merging into a request body — keeps the 15-field list
+    /// defined exactly once instead of duplicated into every call site that sends it.
+    private func metadataJSONFields(_ metadata: WishListItemMetadata) throws -> [String: Any] {
+        let data = try JSONEncoder().encode(metadata)
+        return (try JSONSerialization.jsonObject(with: data) as? [String: Any]) ?? [:]
+    }
+
     private func makeUser(from user: RemoteUser) async throws -> User {
         let imageData = await loadImageData(from: user.imageURL)
         return User(
@@ -476,19 +463,26 @@ public actor RemoteOurWishAPI: AuthStoreService, WishListStoreService, Collabora
         )
     }
 
+    /// Loads every item's image concurrently (each is a separate HTTP round-trip) rather
+    /// than one at a time — a list of N items no longer takes N sequential round-trips.
     private func mapWishListItems(_ items: [RemoteItem], listId: Int64, userId: Int64) async -> [WishListItem] {
-        var mapped: [WishListItem] = []
-        for item in items {
-            mapped.append(await makeWishListItem(from: item, listId: listId, userId: userId))
+        await withTaskGroup(of: (Int, WishListItem).self) { group in
+            for (index, item) in items.enumerated() {
+                group.addTask {
+                    (index, await self.makeWishListItem(from: item, listId: listId, userId: userId))
+                }
+            }
+            var results: [(Int, WishListItem)] = []
+            results.reserveCapacity(items.count)
+            for await result in group {
+                results.append(result)
+            }
+            return results.sorted { $0.0 < $1.0 }.map(\.1)
         }
-        return mapped
     }
 
     private func makeWishListItem(from item: RemoteItem, listId: Int64, userId: Int64) async -> WishListItem {
         let imageData = await loadImageData(from: item.imageURL)
-        let parsedDateRetrieved = item.dateRetrieved.flatMap {
-            Self.dateOnlyFormatter.date(from: $0) ?? ISO8601DateFormatter().date(from: $0)
-        }
         return WishListItem(
             id: item.id,
             userId: userId,
@@ -500,32 +494,24 @@ public actor RemoteOurWishAPI: AuthStoreService, WishListStoreService, Collabora
             isPurchased: item.isPurchased,
             isHidden: item.isHidden,
             imageData: imageData,
-            metadata: WishListItemMetadata(
-                category: item.category,
-                manufacturer: item.manufacturer,
-                msrp: item.msrp,
-                officialProductURL: item.officialProductURL,
-                bestRetailerURL: item.bestRetailerURL,
-                primaryImageURL: item.primaryImageURL,
-                itemDescription: item.itemDescription,
-                specifications: item.specifications,
-                weight: item.weight,
-                caliber: item.caliber,
-                compatibility: item.compatibility,
-                purpose: item.purpose,
-                notes: item.notes,
-                availabilityStatus: item.availabilityStatus,
-                dateRetrieved: parsedDateRetrieved
-            )
+            metadata: item.metadata
         )
     }
 
     private func mapCollaborativeItems(_ items: [RemoteItem], listId: Int64) async -> [CollaborativeItem] {
-        var mapped: [CollaborativeItem] = []
-        for item in items {
-            mapped.append(await makeCollaborativeItem(from: item, listId: listId))
+        await withTaskGroup(of: (Int, CollaborativeItem).self) { group in
+            for (index, item) in items.enumerated() {
+                group.addTask {
+                    (index, await self.makeCollaborativeItem(from: item, listId: listId))
+                }
+            }
+            var results: [(Int, CollaborativeItem)] = []
+            results.reserveCapacity(items.count)
+            for await result in group {
+                results.append(result)
+            }
+            return results.sorted { $0.0 < $1.0 }.map(\.1)
         }
-        return mapped
     }
 
     private func makeCollaborativeItem(from item: RemoteItem, listId: Int64) async -> CollaborativeItem {

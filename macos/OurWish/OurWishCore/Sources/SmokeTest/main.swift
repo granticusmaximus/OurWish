@@ -387,6 +387,107 @@ do {
     )
 }
 
+// MARK: - AuthStore
+
+section("AuthStore")
+do {
+    let service = FakeAuthStoreService()
+    await service.seedUser(email: "a@example.com", password: "secret123")
+    let store = AuthStore(service: service)
+
+    try await store.login(email: "a@example.com", password: "secret123")
+    check("login sets currentUser", store.currentUser?.email == "a@example.com")
+
+    var wrongPasswordThrew = false
+    do {
+        try await store.login(email: "a@example.com", password: "wrong")
+    } catch {
+        wrongPasswordThrew = true
+    }
+    check("login throws on wrong password", wrongPasswordThrew)
+
+    try await store.register(firstName: "Jamie", lastName: "Lee", email: "b@example.com", password: "secret123")
+    let userCountAfterRegister = try await service.userCount()
+    check("register adds a new user", userCountAfterRegister == 2)
+
+    await store.logout()
+    check("logout clears currentUser", store.currentUser == nil)
+    let logoutCallCount = await service.logoutCallCount
+    check("logout calls the service", logoutCallCount == 1)
+}
+
+// MARK: - WishListStore
+
+section("WishListStore")
+do {
+    let service = FakeWishListStoreService()
+    let store = WishListStore(service: service)
+
+    store.setCurrentUser(1)
+    try await store.createList(name: "Groceries")
+    check(
+        "createList adds and selects the new list",
+        store.wishLists.map(\.name) == ["Groceries"] && store.selectedListId == store.wishLists.first?.id
+    )
+
+    try await store.addItem(productName: "Milk", price: 3.5, quantity: 2, url: nil)
+    check("addItem appears in items", store.items.map(\.productName) == ["Milk"])
+
+    if let itemId = store.items.first?.id {
+        try await store.setPurchased(itemId, isPurchased: true)
+        check(
+            "setPurchased moves the item to purchasedItems",
+            store.items.isEmpty && store.purchasedItems.count == 1
+        )
+
+        try await store.deleteItem(itemId)
+        check("deleteItem removes it", store.purchasedItems.isEmpty)
+    } else {
+        check("addItem produced an item to continue testing with", false)
+    }
+
+    await service.setError(FakeServiceError(message: "boom"))
+    store.setCurrentUser(2)
+    try? await Task.sleep(for: .milliseconds(100))
+    check("service failures during refresh surface via lastError", store.lastError == "boom")
+}
+
+// MARK: - CollaborativeStore
+
+section("CollaborativeStore")
+do {
+    let service = FakeCollaborativeStoreService()
+    await service.seedPartner(
+        User(id: 2, firstName: "Bailey", lastName: "User", displayName: "Bailey", email: "b@example.com", passwordHash: "")
+    )
+    let store = CollaborativeStore(service: service)
+
+    store.setCurrentUser(1)
+    try await store.createList(partnerEmail: "b@example.com", name: "Vacation")
+    check(
+        "createList adds and selects the new list",
+        store.lists.map(\.name) == ["Vacation"] && store.selectedListId == store.lists.first?.id
+    )
+
+    try await store.addItem(productName: "Sunscreen", price: 12.5, quantity: 1, url: nil)
+    check("addItem appears in items", store.items.map(\.productName) == ["Sunscreen"])
+
+    if let itemId = store.items.first?.id {
+        try await store.setPurchased(itemId, isPurchased: true)
+        check(
+            "setPurchased moves the item to purchasedItems",
+            store.items.isEmpty && store.purchasedItems.count == 1
+        )
+    } else {
+        check("addItem produced an item to continue testing with", false)
+    }
+
+    await service.setError(FakeServiceError(message: "boom"))
+    store.setCurrentUser(3)
+    try? await Task.sleep(for: .milliseconds(100))
+    check("service failures during refresh surface via lastError", store.lastError == "boom")
+}
+
 // MARK: - Summary
 
 print("\n---")

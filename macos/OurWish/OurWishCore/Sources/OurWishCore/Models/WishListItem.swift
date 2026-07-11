@@ -1,7 +1,7 @@
 import Foundation
 import GRDB
 
-public struct WishListItemMetadata: Codable, Equatable, Sendable {
+public struct WishListItemMetadata: Equatable, Sendable {
     public var category: String?
     public var manufacturer: String?
     public var msrp: Double?
@@ -52,6 +52,74 @@ public struct WishListItemMetadata: Codable, Equatable, Sendable {
         self.notes = notes
         self.availabilityStatus = availabilityStatus
         self.dateRetrieved = dateRetrieved
+    }
+}
+
+/// `WishListItemMetadata` is deliberately the single place that knows how these fields
+/// are represented as flat JSON — the server's `ItemDTO`/`CreateItemRequest`/
+/// `UpdateItemRequest` and the remote client's item type all hold a `metadata` property
+/// and delegate to this conformance (decoding/encoding it against the *same* top-level
+/// decoder/encoder as their own scalar fields) instead of each re-declaring all 15
+/// fields themselves.
+extension WishListItemMetadata: Codable {
+    /// Canonical "yyyy-MM-dd" formatter for `dateRetrieved` on the wire — shared so the
+    /// client and server don't each keep a private copy that can drift. Decoding also
+    /// tolerates ISO 8601 for values a previous encoding produced.
+    public static let dateOnlyFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.calendar = Calendar(identifier: .iso8601)
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.timeZone = TimeZone(secondsFromGMT: 0)
+        formatter.dateFormat = "yyyy-MM-dd"
+        return formatter
+    }()
+
+    private enum CodingKeys: String, CodingKey {
+        case category, manufacturer, msrp, officialProductURL, bestRetailerURL, primaryImageURL
+        case itemDescription, specifications, weight, caliber, compatibility, purpose, notes
+        case availabilityStatus, dateRetrieved
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        category = try container.decodeIfPresent(String.self, forKey: .category)
+        manufacturer = try container.decodeIfPresent(String.self, forKey: .manufacturer)
+        msrp = try container.decodeIfPresent(Double.self, forKey: .msrp)
+        officialProductURL = try container.decodeIfPresent(String.self, forKey: .officialProductURL)
+        bestRetailerURL = try container.decodeIfPresent(String.self, forKey: .bestRetailerURL)
+        primaryImageURL = try container.decodeIfPresent(String.self, forKey: .primaryImageURL)
+        itemDescription = try container.decodeIfPresent(String.self, forKey: .itemDescription)
+        specifications = try container.decodeIfPresent(String.self, forKey: .specifications)
+        weight = try container.decodeIfPresent(String.self, forKey: .weight)
+        caliber = try container.decodeIfPresent(String.self, forKey: .caliber)
+        compatibility = try container.decodeIfPresent(String.self, forKey: .compatibility)
+        purpose = try container.decodeIfPresent(String.self, forKey: .purpose)
+        notes = try container.decodeIfPresent(String.self, forKey: .notes)
+        availabilityStatus = try container.decodeIfPresent(String.self, forKey: .availabilityStatus)
+        if let raw = try container.decodeIfPresent(String.self, forKey: .dateRetrieved) {
+            dateRetrieved = Self.dateOnlyFormatter.date(from: raw) ?? ISO8601DateFormatter().date(from: raw)
+        } else {
+            dateRetrieved = nil
+        }
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encodeIfPresent(category, forKey: .category)
+        try container.encodeIfPresent(manufacturer, forKey: .manufacturer)
+        try container.encodeIfPresent(msrp, forKey: .msrp)
+        try container.encodeIfPresent(officialProductURL, forKey: .officialProductURL)
+        try container.encodeIfPresent(bestRetailerURL, forKey: .bestRetailerURL)
+        try container.encodeIfPresent(primaryImageURL, forKey: .primaryImageURL)
+        try container.encodeIfPresent(itemDescription, forKey: .itemDescription)
+        try container.encodeIfPresent(specifications, forKey: .specifications)
+        try container.encodeIfPresent(weight, forKey: .weight)
+        try container.encodeIfPresent(caliber, forKey: .caliber)
+        try container.encodeIfPresent(compatibility, forKey: .compatibility)
+        try container.encodeIfPresent(purpose, forKey: .purpose)
+        try container.encodeIfPresent(notes, forKey: .notes)
+        try container.encodeIfPresent(availabilityStatus, forKey: .availabilityStatus)
+        try container.encodeIfPresent(dateRetrieved.map { Self.dateOnlyFormatter.string(from: $0) }, forKey: .dateRetrieved)
     }
 }
 

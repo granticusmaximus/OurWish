@@ -56,7 +56,7 @@ struct MainWindowView: View {
                     }
                     Text("Open \(webAccessURL) on your phone or another computer on this WiFi network")
                     Divider()
-                    Button("Log Out", role: .destructive) { authStore.logout() }
+                    Button("Log Out", role: .destructive) { Task { await authStore.logout() } }
                 } label: {
                     AccountMenuLabel(user: authStore.currentUser)
                 }

@@ -8,7 +8,7 @@ import Observation
 #if canImport(Observation)
 @MainActor
 @Observable
-public final class CollaborativeStore {
+public final class CollaborativeStore: ErrorReporting {
     public private(set) var lists: [CollaborativeListWithPartner] = []
     public private(set) var partners: [User] = []
     public var selectedListId: Int64? {
@@ -51,11 +51,8 @@ public final class CollaborativeStore {
             partners = []
             return
         }
-        do {
+        await runCatching {
             partners = try await service.partners(excluding: userId)
-            lastError = nil
-        } catch {
-            lastError = error.localizedDescription
         }
     }
 
@@ -119,15 +116,12 @@ public final class CollaborativeStore {
             return
         }
 
-        do {
+        await runCatching {
             let rows = try await service.collaborativeLists(for: userId)
             lists = rows
             if selectedListId == nil || !rows.contains(where: { $0.id == selectedListId }) {
                 selectedListId = rows.first?.id
             }
-            lastError = nil
-        } catch {
-            lastError = error.localizedDescription
         }
     }
 
@@ -139,14 +133,11 @@ public final class CollaborativeStore {
         }
 
         guard let userId else { return }
-        do {
+        await runCatching {
             async let active = service.collaborativeItems(listId: listId, userId: userId, purchased: false)
             async let purchased = service.collaborativeItems(listId: listId, userId: userId, purchased: true)
             items = try await active
             purchasedItems = try await purchased
-            lastError = nil
-        } catch {
-            lastError = error.localizedDescription
         }
     }
 }

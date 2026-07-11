@@ -6,48 +6,61 @@ struct CreateWishListRequest: Codable {
     let name: String
 }
 
-struct CreateItemRequest: Codable {
+/// Item request bodies hold `metadata` as a single `WishListItemMetadata`, decoded by
+/// delegating to the same flat JSON object `WishListItemMetadata` already knows how to
+/// read (see its `Decodable` conformance) — one field list to maintain instead of one
+/// per request/response type, with no change to the wire format.
+struct CreateItemRequest: Decodable {
     let productName: String
-    let category: String?
-    let manufacturer: String?
     let price: Double
-    let msrp: Double?
     let quantity: Int
     let url: String?
-    let officialProductURL: String?
-    let bestRetailerURL: String?
-    let primaryImageURL: String?
-    let itemDescription: String?
-    let specifications: String?
-    let weight: String?
-    let caliber: String?
-    let compatibility: String?
-    let purpose: String?
-    let notes: String?
-    let availabilityStatus: String?
-    let dateRetrieved: String?
+    /// Base64-encoded photo the client already resolved (e.g. the native app's
+    /// URL-based fetch preview). May be nil even when `clientResolvedImage` is true —
+    /// that means the client looked and found nothing, or the user explicitly cleared
+    /// it, and the server must not override that by auto-fetching from `url` itself.
+    let imageBase64: String?
+    /// True when the client already ran its own photo-resolution flow (the native app
+    /// always does, via its URL-fetch preview). Older/simpler clients like the PWA omit
+    /// this, so the server falls back to its own URL fetch as before.
+    let clientResolvedImage: Bool?
+    let metadata: WishListItemMetadata
+
+    private enum CodingKeys: String, CodingKey {
+        case productName, price, quantity, url, imageBase64, clientResolvedImage
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        productName = try container.decode(String.self, forKey: .productName)
+        price = try container.decode(Double.self, forKey: .price)
+        quantity = try container.decode(Int.self, forKey: .quantity)
+        url = try container.decodeIfPresent(String.self, forKey: .url)
+        imageBase64 = try container.decodeIfPresent(String.self, forKey: .imageBase64)
+        clientResolvedImage = try container.decodeIfPresent(Bool.self, forKey: .clientResolvedImage)
+        metadata = try WishListItemMetadata(from: decoder)
+    }
 }
 
-struct UpdateItemRequest: Codable {
+struct UpdateItemRequest: Decodable {
     let productName: String
-    let category: String?
-    let manufacturer: String?
     let price: Double
-    let msrp: Double?
     let quantity: Int
     let url: String?
-    let officialProductURL: String?
-    let bestRetailerURL: String?
-    let primaryImageURL: String?
-    let itemDescription: String?
-    let specifications: String?
-    let weight: String?
-    let caliber: String?
-    let compatibility: String?
-    let purpose: String?
-    let notes: String?
-    let availabilityStatus: String?
-    let dateRetrieved: String?
+    let metadata: WishListItemMetadata
+
+    private enum CodingKeys: String, CodingKey {
+        case productName, price, quantity, url
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        productName = try container.decode(String.self, forKey: .productName)
+        price = try container.decode(Double.self, forKey: .price)
+        quantity = try container.decode(Int.self, forKey: .quantity)
+        url = try container.decodeIfPresent(String.self, forKey: .url)
+        metadata = try WishListItemMetadata(from: decoder)
+    }
 }
 
 struct SetPurchasedRequest: Codable {
@@ -58,7 +71,7 @@ struct SetHiddenRequest: Codable {
     let isHidden: Bool
 }
 
-struct ItemsResponseDTO: Codable, ResponseEncodable {
+struct ItemsResponseDTO: Encodable, ResponseEncodable {
     let active: [ItemDTO]
     let purchased: [ItemDTO]
 }
@@ -66,25 +79,9 @@ struct ItemsResponseDTO: Codable, ResponseEncodable {
 struct WishListRoutes {
     let repository: WishListRepository
 
-    private static let dateOnlyFormatter: DateFormatter = {
-        let formatter = DateFormatter()
-        formatter.calendar = Calendar(identifier: .iso8601)
-        formatter.locale = Locale(identifier: "en_US_POSIX")
-        formatter.timeZone = TimeZone(secondsFromGMT: 0)
-        formatter.dateFormat = "yyyy-MM-dd"
-        return formatter
-    }()
-
     private func requireUserId(_ context: AppRequestContext) throws -> Int64 {
         guard let userId = context.userId else { throw HTTPError(.unauthorized) }
         return userId
-    }
-
-    private func parseDate(_ raw: String?) -> Date? {
-        guard let raw = raw?.trimmingCharacters(in: .whitespacesAndNewlines), !raw.isEmpty else {
-            return nil
-        }
-        return Self.dateOnlyFormatter.date(from: raw) ?? ISO8601DateFormatter().date(from: raw)
     }
 
     func addRoutes(to group: RouterGroup<AppRequestContext>) {
@@ -143,10 +140,18 @@ struct WishListRoutes {
             guard let listId = context.parameters.get("id", as: Int64.self) else { throw HTTPError(.badRequest) }
             let body = try await request.decode(as: CreateItemRequest.self, context: context)
 
-            // Auto-fetch a product photo server-side (same LinkPresentation-backed
-            // fetcher the native app uses) so the PWA doesn't need to implement its own.
+            // Prefer a photo the client already resolved (including a deliberate "no
+            // photo"). Only auto-fetch server-side (same LinkPresentation-backed
+            // fetcher the native app uses) when the client didn't resolve one itself —
+            // e.g. the PWA, which has no client-side fetch of its own.
             var imageData: Data?
-            if let url = body.url, !url.isEmpty {
+            if body.clientResolvedImage == true {
+                imageData = body.imageBase64.flatMap { base64 in
+                    Data(base64Encoded: base64).flatMap {
+                        ImageResizing.resizedJPEGData(from: $0, maxDimension: 512, compressionQuality: 0.8)
+                    }
+                }
+            } else if let url = body.url, !url.isEmpty {
                 imageData = await ProductImageFetcher.fetchImageData(for: url)
             }
 
@@ -157,23 +162,7 @@ struct WishListRoutes {
                     quantity: body.quantity,
                     url: body.url,
                     imageData: imageData,
-                    metadata: WishListItemMetadata(
-                        category: body.category,
-                        manufacturer: body.manufacturer,
-                        msrp: body.msrp,
-                        officialProductURL: body.officialProductURL,
-                        bestRetailerURL: body.bestRetailerURL,
-                        primaryImageURL: body.primaryImageURL,
-                        itemDescription: body.itemDescription,
-                        specifications: body.specifications,
-                        weight: body.weight,
-                        caliber: body.caliber,
-                        compatibility: body.compatibility,
-                        purpose: body.purpose,
-                        notes: body.notes,
-                        availabilityStatus: body.availabilityStatus,
-                        dateRetrieved: parseDate(body.dateRetrieved)
-                    )
+                    metadata: body.metadata
                 )
                 return ItemDTO(item)
             } catch let error as RepositoryError {
@@ -191,23 +180,7 @@ struct WishListRoutes {
                     price: body.price,
                     quantity: body.quantity,
                     url: body.url,
-                    metadata: WishListItemMetadata(
-                        category: body.category,
-                        manufacturer: body.manufacturer,
-                        msrp: body.msrp,
-                        officialProductURL: body.officialProductURL,
-                        bestRetailerURL: body.bestRetailerURL,
-                        primaryImageURL: body.primaryImageURL,
-                        itemDescription: body.itemDescription,
-                        specifications: body.specifications,
-                        weight: body.weight,
-                        caliber: body.caliber,
-                        compatibility: body.compatibility,
-                        purpose: body.purpose,
-                        notes: body.notes,
-                        availabilityStatus: body.availabilityStatus,
-                        dateRetrieved: parseDate(body.dateRetrieved)
-                    )
+                    metadata: body.metadata
                 )
                 return .noContent
             } catch let error as RepositoryError {

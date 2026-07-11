@@ -73,7 +73,13 @@ struct CollaborativeRoutes {
             let body = try await request.decode(as: CreateItemRequest.self, context: context)
 
             var imageData: Data?
-            if let url = body.url, !url.isEmpty {
+            if body.clientResolvedImage == true {
+                imageData = body.imageBase64.flatMap { base64 in
+                    Data(base64Encoded: base64).flatMap {
+                        ImageResizing.resizedJPEGData(from: $0, maxDimension: 512, compressionQuality: 0.8)
+                    }
+                }
+            } else if let url = body.url, !url.isEmpty {
                 imageData = await ProductImageFetcher.fetchImageData(for: url)
             }
 

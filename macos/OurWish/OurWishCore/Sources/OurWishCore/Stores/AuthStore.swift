@@ -34,10 +34,8 @@ public final class AuthStore {
         refreshUserCount()
     }
 
-    public func logout() {
-        Task {
-            try? await service.logout()
-        }
+    public func logout() async {
+        try? await service.logout()
         currentUser = nil
     }
 
