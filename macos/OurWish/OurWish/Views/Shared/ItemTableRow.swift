@@ -16,6 +16,7 @@ struct ItemTableRow: View {
     var onTogglePurchased: (Bool) -> Void
     var onDelete: () -> Void
     var onToggleHidden: (() -> Void)?
+    var onEditDetails: (() -> Void)?
 
     var body: some View {
         GridRow {
@@ -70,11 +71,17 @@ struct ItemTableRow: View {
                         .disabled(!draft.isValid)
                     Button("Cancel", action: onCancelEdit)
                 } else {
-                    Button {
-                        onStartEdit()
+                    Menu {
+                        Button("Quick Edit", action: onStartEdit)
+                        if let onEditDetails {
+                            Button("Edit Details…", action: onEditDetails)
+                        }
                     } label: {
                         Image(systemName: "pencil")
                     }
+                    .menuStyle(.borderlessButton)
+                    .menuIndicator(.hidden)
+                    .frame(width: 16)
                     .help("Edit")
 
                     Button(role: .destructive) {

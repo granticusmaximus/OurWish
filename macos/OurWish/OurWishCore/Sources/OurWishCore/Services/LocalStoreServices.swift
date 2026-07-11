@@ -169,7 +169,8 @@ public struct LocalCollaborativeStoreService: CollaborativeStoreService {
         price: Double,
         quantity: Int,
         url: String?,
-        imageData: Data?
+        imageData: Data?,
+        metadata: WishListItemMetadata
     ) async throws -> CollaborativeItem {
         try repository.addItem(
             listId: listId,
@@ -178,7 +179,8 @@ public struct LocalCollaborativeStoreService: CollaborativeStoreService {
             price: price,
             quantity: quantity,
             url: url,
-            imageData: imageData
+            imageData: imageData,
+            metadata: metadata
         )
     }
 
@@ -189,7 +191,8 @@ public struct LocalCollaborativeStoreService: CollaborativeStoreService {
         productName: String,
         price: Double,
         quantity: Int,
-        url: String?
+        url: String?,
+        metadata: WishListItemMetadata
     ) async throws {
         try repository.updateItem(
             itemId: itemId,
@@ -198,12 +201,17 @@ public struct LocalCollaborativeStoreService: CollaborativeStoreService {
             productName: productName,
             price: price,
             quantity: quantity,
-            url: url
+            url: url,
+            metadata: metadata
         )
     }
 
     public func setCollaborativeItemPurchased(itemId: Int64, listId: Int64, userId: Int64, isPurchased: Bool) async throws {
         try repository.setPurchased(itemId: itemId, listId: listId, userId: userId, isPurchased: isPurchased)
+    }
+
+    public func setCollaborativeItemHidden(itemId: Int64, listId: Int64, userId: Int64, isHidden: Bool) async throws {
+        try repository.setHidden(itemId: itemId, listId: listId, userId: userId, isHidden: isHidden)
     }
 
     public func deleteCollaborativeItem(itemId: Int64, listId: Int64, userId: Int64) async throws {

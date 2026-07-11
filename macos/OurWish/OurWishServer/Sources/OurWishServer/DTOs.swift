@@ -85,9 +85,9 @@ struct ItemDTO: Encodable, ResponseEncodable {
         quantity = item.quantity
         url = item.url
         isPurchased = item.isPurchased
-        isHidden = false
+        isHidden = item.isHidden
         imageURL = item.imageData != nil ? "/api/v1/collaborative-items/\(item.id!)/image" : nil
-        metadata = .empty
+        metadata = item.metadata
     }
 
     func encode(to encoder: Encoder) throws {

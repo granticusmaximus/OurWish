@@ -86,7 +86,8 @@ struct CollaborativeRoutes {
             do {
                 let item = try repository.addItem(
                     listId: listId, userId: userId, productName: body.productName,
-                    price: body.price, quantity: body.quantity, url: body.url, imageData: imageData
+                    price: body.price, quantity: body.quantity, url: body.url,
+                    imageData: imageData, metadata: body.metadata
                 )
                 return ItemDTO(item)
             } catch let error as RepositoryError {
@@ -104,7 +105,7 @@ struct CollaborativeRoutes {
             do {
                 try repository.updateItem(
                     itemId: itemId, listId: listId, userId: userId, productName: body.productName,
-                    price: body.price, quantity: body.quantity, url: body.url
+                    price: body.price, quantity: body.quantity, url: body.url, metadata: body.metadata
                 )
                 return .noContent
             } catch let error as RepositoryError {
@@ -121,6 +122,21 @@ struct CollaborativeRoutes {
             let body = try await request.decode(as: SetPurchasedRequest.self, context: context)
             do {
                 try repository.setPurchased(itemId: itemId, listId: listId, userId: userId, isPurchased: body.isPurchased)
+                return .noContent
+            } catch let error as RepositoryError {
+                throw error.httpError
+            }
+        }
+
+        group.put("/collaborative/lists/:listId/items/:itemId/hidden") { request, context -> HTTPResponse.Status in
+            let userId = try requireUserId(context)
+            guard let listId = context.parameters.get("listId", as: Int64.self),
+                  let itemId = context.parameters.get("itemId", as: Int64.self) else {
+                throw HTTPError(.badRequest)
+            }
+            let body = try await request.decode(as: SetHiddenRequest.self, context: context)
+            do {
+                try repository.setHidden(itemId: itemId, listId: listId, userId: userId, isHidden: body.isHidden)
                 return .noContent
             } catch let error as RepositoryError {
                 throw error.httpError

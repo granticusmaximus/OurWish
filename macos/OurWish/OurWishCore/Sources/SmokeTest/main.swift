@@ -428,6 +428,37 @@ do {
     check("collaborative product image persists to the database", refetched?.imageData == photoData)
 }
 
+do {
+    let dbQueue = try freshDatabase()
+    let userA = try insertUser(dbQueue, email: "a@example.com")
+    try insertUser(dbQueue, email: "b@example.com")
+    let repo = CollaborativeListRepository(dbWriter: dbQueue)
+    let list = try repo.createList(currentUserId: userA.id!, partnerEmail: "b@example.com", name: "Vacation")
+
+    let metadata = WishListItemMetadata(category: "Beach", manufacturer: "CoolBrand", msrp: 19.99)
+    let item = try repo.addItem(
+        listId: list.id!, userId: userA.id!, productName: "Sunscreen",
+        price: 12.5, quantity: 1, url: nil, metadata: metadata
+    )
+    check("collaborative addItem stores metadata", item.metadata == metadata)
+
+    let refetched = try repo.items(listId: list.id!, userId: userA.id!, purchased: false).first
+    check("collaborative metadata persists to the database", refetched?.metadata == metadata)
+
+    let updatedMetadata = WishListItemMetadata(category: "Updated Category")
+    try repo.updateItem(
+        itemId: item.id!, listId: list.id!, userId: userA.id!, productName: "Sunscreen",
+        price: 12.5, quantity: 1, url: nil, metadata: updatedMetadata
+    )
+    let afterUpdate = try repo.items(listId: list.id!, userId: userA.id!, purchased: false).first
+    check("collaborative updateItem replaces metadata", afterUpdate?.metadata == updatedMetadata)
+
+    check("collaborative items default to not hidden", item.isHidden == false)
+    try repo.setHidden(itemId: item.id!, listId: list.id!, userId: userA.id!, isHidden: true)
+    let afterHide = try repo.items(listId: list.id!, userId: userA.id!, purchased: false).first
+    check("collaborative setHidden persists", afterHide?.isHidden == true)
+}
+
 // MARK: - DatabaseManager path resolution
 
 section("DatabaseManager")
@@ -530,6 +561,9 @@ do {
     check("addItem appears in items", store.items.map(\.productName) == ["Sunscreen"])
 
     if let itemId = store.items.first?.id {
+        try await store.setHidden(itemId, isHidden: true)
+        check("setHidden persists on the item", store.items.first?.isHidden == true)
+
         try await store.setPurchased(itemId, isPurchased: true)
         check(
             "setPurchased moves the item to purchasedItems",

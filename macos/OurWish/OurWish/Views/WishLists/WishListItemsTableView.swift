@@ -7,6 +7,7 @@ import SwiftUI
 struct WishListItemsTableView: View {
     @Environment(WishListStore.self) private var store
     let wishListName: String
+    var onEditItem: (Int64) -> Void
 
     @State private var errorMessage: String?
 
@@ -46,7 +47,8 @@ struct WishListItemsTableView: View {
                 onRename: { name in
                     guard let listId = store.selectedListId else { return }
                     run { try await store.renameList(listId, name: name) }
-                }
+                },
+                onEditDetails: onEditItem
             )
         }
     }

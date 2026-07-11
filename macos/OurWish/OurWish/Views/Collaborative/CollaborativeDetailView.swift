@@ -7,6 +7,7 @@ struct CollaborativeDetailView: View {
     let list: CollaborativeListWithPartner
 
     @State private var showAddItem = false
+    @State private var editingItem: CollaborativeItem?
     @State private var showDeleteConfirm = false
     @State private var errorMessage: String?
 
@@ -22,7 +23,9 @@ struct CollaborativeDetailView: View {
                     .font(.callout)
                     .foregroundStyle(.secondary)
 
-                CollaborativeItemsTableView(listName: list.name)
+                CollaborativeItemsTableView(listName: list.name) { id in
+                    editingItem = (store.items + store.purchasedItems).first(where: { $0.id == id })
+                }
             }
             .padding(24)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -48,14 +51,21 @@ struct CollaborativeDetailView: View {
             }
         }
         .sheet(isPresented: $showAddItem) {
-            AddItemSheet(onClose: { showAddItem = false }) { name, price, quantity, url, imageData, _ in
+            AddItemSheet(onClose: { showAddItem = false }) { name, price, quantity, url, imageData, metadata in
                 try await store.addItem(
                     productName: name,
                     price: price,
                     quantity: quantity,
                     url: url,
-                    imageData: imageData
+                    imageData: imageData,
+                    metadata: metadata
                 )
+            }
+        }
+        .sheet(item: $editingItem) { item in
+            AddItemSheet(existingItem: item, onClose: { editingItem = nil }) { name, price, quantity, url, _, metadata in
+                guard let itemId = item.id else { return }
+                try await store.updateItem(itemId, productName: name, price: price, quantity: quantity, url: url, metadata: metadata)
             }
         }
         .confirmationDialog(

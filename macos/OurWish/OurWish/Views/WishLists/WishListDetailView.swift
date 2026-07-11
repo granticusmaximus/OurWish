@@ -9,6 +9,7 @@ struct WishListDetailView: View {
     let list: WishList
 
     @State private var showAddItem = false
+    @State private var editingItem: WishListItem?
     @State private var showDeleteConfirm = false
     @State private var errorMessage: String?
 
@@ -19,7 +20,9 @@ struct WishListDetailView: View {
                     Text(errorMessage)
                         .foregroundStyle(.red)
                 }
-                WishListItemsTableView(wishListName: list.name)
+                WishListItemsTableView(wishListName: list.name) { id in
+                    editingItem = (store.items + store.purchasedItems).first(where: { $0.id == id })
+                }
             }
             .padding(24)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -55,6 +58,12 @@ struct WishListDetailView: View {
                         productName: name, price: price, quantity: quantity, url: url,
                         listId: list.id, imageData: imageData, metadata: metadata
                     )
+            }
+        }
+        .sheet(item: $editingItem) { item in
+            AddItemSheet(existingItem: item, onClose: { editingItem = nil }) { name, price, quantity, url, _, metadata in
+                guard let itemId = item.id else { return }
+                try await store.updateItem(itemId, productName: name, price: price, quantity: quantity, url: url, metadata: metadata)
             }
         }
         .confirmationDialog(

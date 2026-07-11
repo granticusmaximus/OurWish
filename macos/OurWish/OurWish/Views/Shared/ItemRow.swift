@@ -39,7 +39,7 @@ extension ItemRow {
             quantity: item.quantity,
             url: item.url,
             isPurchased: item.isPurchased,
-            isHidden: false,
+            isHidden: item.isHidden,
             imageData: item.imageData
         )
     }

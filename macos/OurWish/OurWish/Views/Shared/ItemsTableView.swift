@@ -15,6 +15,7 @@ struct ItemsTableView: View {
     var onDelete: (Int64) -> Void
     var onToggleHidden: ((Int64, Bool) -> Void)?
     var onRename: ((String) -> Void)?
+    var onEditDetails: ((Int64) -> Void)?
 
     @State private var editingId: Int64?
     @State private var draft = ItemDraft()
@@ -117,7 +118,8 @@ struct ItemsTableView: View {
                     onDelete: { onDelete(item.id) },
                     onToggleHidden: config.allowHideToggle
                         ? { onToggleHidden?(item.id, !item.isHidden) }
-                        : nil
+                        : nil,
+                    onEditDetails: onEditDetails.map { callback in { callback(item.id) } }
                 )
             }
 

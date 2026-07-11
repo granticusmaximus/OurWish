@@ -21,6 +21,26 @@ struct ItemMetadataDraft {
     var availabilityStatus = ""
     var dateRetrieved = ""
 
+    init() {}
+
+    init(from metadata: WishListItemMetadata) {
+        category = metadata.category ?? ""
+        manufacturer = metadata.manufacturer ?? ""
+        msrp = metadata.msrp.map { String(format: "%.2f", $0) } ?? ""
+        officialProductURL = metadata.officialProductURL ?? ""
+        bestRetailerURL = metadata.bestRetailerURL ?? ""
+        primaryImageURL = metadata.primaryImageURL ?? ""
+        itemDescription = metadata.itemDescription ?? ""
+        specifications = metadata.specifications ?? ""
+        weight = metadata.weight ?? ""
+        caliber = metadata.caliber ?? ""
+        compatibility = metadata.compatibility ?? ""
+        purpose = metadata.purpose ?? ""
+        notes = metadata.notes ?? ""
+        availabilityStatus = metadata.availabilityStatus ?? ""
+        dateRetrieved = metadata.dateRetrieved.map { WishListItemMetadata.dateOnlyFormatter.string(from: $0) } ?? ""
+    }
+
     private var trimmedMSRP: String { msrp.trimmingCharacters(in: .whitespacesAndNewlines) }
     private var parsedMSRP: Double? { Double(trimmedMSRP) }
     /// True only when `msrp` has non-blank text that isn't a valid number.

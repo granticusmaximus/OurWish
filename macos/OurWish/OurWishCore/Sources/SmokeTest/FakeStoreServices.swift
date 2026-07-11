@@ -219,17 +219,22 @@ actor FakeCollaborativeStoreService: CollaborativeStoreService {
     }
 
     func addCollaborativeItem(
-        listId: Int64, userId: Int64, productName: String, price: Double, quantity: Int, url: String?, imageData: Data?
+        listId: Int64, userId: Int64, productName: String, price: Double, quantity: Int, url: String?,
+        imageData: Data?, metadata: WishListItemMetadata
     ) async throws -> CollaborativeItem {
         if let errorToThrow { throw errorToThrow }
-        let item = CollaborativeItem(id: nextItemId, listId: listId, productName: productName, price: price, quantity: quantity, url: url, imageData: imageData)
+        let item = CollaborativeItem(
+            id: nextItemId, listId: listId, productName: productName, price: price, quantity: quantity,
+            url: url, imageData: imageData, metadata: metadata
+        )
         nextItemId += 1
         items.append(item)
         return item
     }
 
     func updateCollaborativeItem(
-        itemId: Int64, listId: Int64, userId: Int64, productName: String, price: Double, quantity: Int, url: String?
+        itemId: Int64, listId: Int64, userId: Int64, productName: String, price: Double, quantity: Int, url: String?,
+        metadata: WishListItemMetadata
     ) async throws {
         if let errorToThrow { throw errorToThrow }
         guard let index = items.firstIndex(where: { $0.id == itemId }) else { return }
@@ -237,12 +242,33 @@ actor FakeCollaborativeStoreService: CollaborativeStoreService {
         items[index].price = price
         items[index].quantity = quantity
         items[index].url = url
+        items[index].category = metadata.category
+        items[index].manufacturer = metadata.manufacturer
+        items[index].msrp = metadata.msrp
+        items[index].officialProductURL = metadata.officialProductURL
+        items[index].bestRetailerURL = metadata.bestRetailerURL
+        items[index].primaryImageURL = metadata.primaryImageURL
+        items[index].itemDescription = metadata.itemDescription
+        items[index].specifications = metadata.specifications
+        items[index].weight = metadata.weight
+        items[index].caliber = metadata.caliber
+        items[index].compatibility = metadata.compatibility
+        items[index].purpose = metadata.purpose
+        items[index].notes = metadata.notes
+        items[index].availabilityStatus = metadata.availabilityStatus
+        items[index].dateRetrieved = metadata.dateRetrieved
     }
 
     func setCollaborativeItemPurchased(itemId: Int64, listId: Int64, userId: Int64, isPurchased: Bool) async throws {
         if let errorToThrow { throw errorToThrow }
         guard let index = items.firstIndex(where: { $0.id == itemId }) else { return }
         items[index].isPurchased = isPurchased
+    }
+
+    func setCollaborativeItemHidden(itemId: Int64, listId: Int64, userId: Int64, isHidden: Bool) async throws {
+        if let errorToThrow { throw errorToThrow }
+        guard let index = items.firstIndex(where: { $0.id == itemId }) else { return }
+        items[index].isHidden = isHidden
     }
 
     func deleteCollaborativeItem(itemId: Int64, listId: Int64, userId: Int64) async throws {

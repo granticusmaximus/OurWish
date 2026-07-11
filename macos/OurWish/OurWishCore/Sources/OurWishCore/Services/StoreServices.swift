@@ -61,7 +61,8 @@ public protocol CollaborativeStoreService: Sendable {
         price: Double,
         quantity: Int,
         url: String?,
-        imageData: Data?
+        imageData: Data?,
+        metadata: WishListItemMetadata
     ) async throws -> CollaborativeItem
     func updateCollaborativeItem(
         itemId: Int64,
@@ -70,8 +71,10 @@ public protocol CollaborativeStoreService: Sendable {
         productName: String,
         price: Double,
         quantity: Int,
-        url: String?
+        url: String?,
+        metadata: WishListItemMetadata
     ) async throws
     func setCollaborativeItemPurchased(itemId: Int64, listId: Int64, userId: Int64, isPurchased: Bool) async throws
+    func setCollaborativeItemHidden(itemId: Int64, listId: Int64, userId: Int64, isHidden: Bool) async throws
     func deleteCollaborativeItem(itemId: Int64, listId: Int64, userId: Int64) async throws
 }

@@ -3,10 +3,11 @@ import SwiftUI
 
 /// Thin wrapper around `ItemsTableView` for collaborative lists — replaces
 /// `WishListTable.tsx` in its `isCollaborative={true}` mode (no URL column, no
-/// hide/show, no inline rename).
+/// inline rename).
 struct CollaborativeItemsTableView: View {
     @Environment(CollaborativeStore.self) private var store
     let listName: String
+    var onEditItem: (Int64) -> Void
 
     @State private var errorMessage: String?
 
@@ -20,16 +21,25 @@ struct CollaborativeItemsTableView: View {
                 title: listName,
                 items: store.items.map(ItemRow.init),
                 purchasedItems: store.purchasedItems.map(ItemRow.init),
-                config: ItemsTableConfig(showURLColumn: false, allowHideToggle: false, allowRename: false),
+                config: ItemsTableConfig(showURLColumn: false, allowHideToggle: true, allowRename: false),
                 onSave: { id, name, price, quantity, url in
-                    run { try await store.updateItem(id, productName: name, price: price, quantity: quantity, url: url) }
+                    let metadata = store.items.first(where: { $0.id == id })?.metadata ?? .empty
+                    run {
+                        try await store.updateItem(
+                            id, productName: name, price: price, quantity: quantity, url: url, metadata: metadata
+                        )
+                    }
                 },
                 onTogglePurchased: { id, isPurchased in
                     run { try await store.setPurchased(id, isPurchased: isPurchased) }
                 },
                 onDelete: { id in
                     run { try await store.deleteItem(id) }
-                }
+                },
+                onToggleHidden: { id, isHidden in
+                    run { try await store.setHidden(id, isHidden: isHidden) }
+                },
+                onEditDetails: onEditItem
             )
         }
     }

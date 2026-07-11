@@ -98,7 +98,8 @@ public final class CollaborativeListRepository: Sendable {
         price: Double,
         quantity: Int,
         url: String?,
-        imageData: Data? = nil
+        imageData: Data? = nil,
+        metadata: WishListItemMetadata = .empty
     ) throws -> CollaborativeItem {
         try validateItemInput(productName: productName, quantity: quantity)
 
@@ -111,7 +112,8 @@ public final class CollaborativeListRepository: Sendable {
                 price: price,
                 quantity: quantity,
                 url: url,
-                imageData: imageData
+                imageData: imageData,
+                metadata: metadata
             )
             try item.insert(db)
             return item
@@ -125,7 +127,8 @@ public final class CollaborativeListRepository: Sendable {
         productName: String,
         price: Double,
         quantity: Int,
-        url: String?
+        url: String?,
+        metadata: WishListItemMetadata = .empty
     ) throws {
         try validateItemInput(productName: productName, quantity: quantity)
 
@@ -134,10 +137,50 @@ public final class CollaborativeListRepository: Sendable {
             try db.execute(
                 sql: """
                     UPDATE collaborative_items
-                    SET product_name = ?, price = ?, quantity = ?, url = ?
+                    SET product_name = ?,
+                        price = ?,
+                        quantity = ?,
+                        url = ?,
+                        category = ?,
+                        manufacturer = ?,
+                        msrp = ?,
+                        official_product_url = ?,
+                        best_retailer_url = ?,
+                        primary_image_url = ?,
+                        item_description = ?,
+                        specifications = ?,
+                        weight = ?,
+                        caliber = ?,
+                        compatibility = ?,
+                        purpose = ?,
+                        notes = ?,
+                        availability_status = ?,
+                        date_retrieved = ?
                     WHERE id = ? AND list_id = ?
                     """,
-                arguments: [productName, price, quantity, url, itemId, listId]
+                arguments: [
+                    productName,
+                    price,
+                    quantity,
+                    url,
+                    metadata.category,
+                    metadata.manufacturer,
+                    metadata.msrp,
+                    metadata.officialProductURL,
+                    metadata.bestRetailerURL,
+                    metadata.primaryImageURL,
+                    metadata.itemDescription,
+                    metadata.specifications,
+                    metadata.weight,
+                    metadata.caliber,
+                    metadata.compatibility,
+                    metadata.purpose,
+                    metadata.notes,
+                    metadata.availabilityStatus,
+                    metadata.dateRetrieved,
+                    itemId,
+                    listId,
+                ]
             )
         }
     }
@@ -148,6 +191,16 @@ public final class CollaborativeListRepository: Sendable {
             try db.execute(
                 sql: "UPDATE collaborative_items SET is_purchased = ? WHERE id = ? AND list_id = ?",
                 arguments: [isPurchased, itemId, listId]
+            )
+        }
+    }
+
+    public func setHidden(itemId: Int64, listId: Int64, userId: Int64, isHidden: Bool) throws {
+        try dbWriter.write { db in
+            try assertHasAccess(listId, userId: userId, db: db)
+            try db.execute(
+                sql: "UPDATE collaborative_items SET is_hidden = ? WHERE id = ? AND list_id = ?",
+                arguments: [isHidden, itemId, listId]
             )
         }
     }

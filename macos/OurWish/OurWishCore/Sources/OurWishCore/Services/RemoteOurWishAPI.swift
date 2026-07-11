@@ -339,20 +339,25 @@ public actor RemoteOurWishAPI: AuthStoreService, WishListStoreService, Collabora
         price: Double,
         quantity: Int,
         url: String?,
-        imageData: Data?
+        imageData: Data?,
+        metadata: WishListItemMetadata
     ) async throws -> CollaborativeItem {
         _ = userId
+        var body: [String: Any?] = [
+            "productName": productName,
+            "price": price,
+            "quantity": quantity,
+            "url": url,
+            "imageBase64": imageData?.base64EncodedString(),
+            "clientResolvedImage": true,
+        ]
+        for (key, value) in try metadataJSONFields(metadata) {
+            body[key] = value
+        }
         let response: RemoteItem = try await request(
             path: "/api/v1/collaborative/lists/\(listId)/items",
             method: "POST",
-            body: [
-                "productName": productName,
-                "price": price,
-                "quantity": quantity,
-                "url": url,
-                "imageBase64": imageData?.base64EncodedString(),
-                "clientResolvedImage": true,
-            ]
+            body: body
         )
         return await makeCollaborativeItem(from: response, listId: listId)
     }
@@ -364,13 +369,23 @@ public actor RemoteOurWishAPI: AuthStoreService, WishListStoreService, Collabora
         productName: String,
         price: Double,
         quantity: Int,
-        url: String?
+        url: String?,
+        metadata: WishListItemMetadata
     ) async throws {
         _ = userId
+        var body: [String: Any?] = [
+            "productName": productName,
+            "price": price,
+            "quantity": quantity,
+            "url": url,
+        ]
+        for (key, value) in try metadataJSONFields(metadata) {
+            body[key] = value
+        }
         try await requestNoContent(
             path: "/api/v1/collaborative/lists/\(listId)/items/\(itemId)",
             method: "PUT",
-            body: ["productName": productName, "price": price, "quantity": quantity, "url": url]
+            body: body
         )
     }
 
@@ -380,6 +395,15 @@ public actor RemoteOurWishAPI: AuthStoreService, WishListStoreService, Collabora
             path: "/api/v1/collaborative/lists/\(listId)/items/\(itemId)/purchase",
             method: "PUT",
             body: ["isPurchased": isPurchased]
+        )
+    }
+
+    public func setCollaborativeItemHidden(itemId: Int64, listId: Int64, userId: Int64, isHidden: Bool) async throws {
+        _ = userId
+        try await requestNoContent(
+            path: "/api/v1/collaborative/lists/\(listId)/items/\(itemId)/hidden",
+            method: "PUT",
+            body: ["isHidden": isHidden]
         )
     }
 
@@ -532,7 +556,9 @@ public actor RemoteOurWishAPI: AuthStoreService, WishListStoreService, Collabora
             quantity: item.quantity,
             url: item.url,
             isPurchased: item.isPurchased,
-            imageData: imageData
+            isHidden: item.isHidden,
+            imageData: imageData,
+            metadata: item.metadata
         )
     }
 

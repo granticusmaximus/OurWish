@@ -6,6 +6,12 @@ import SwiftUI
 /// sidebar now owns which list is active, so this always adds to "the list you're
 /// currently looking at" rather than offering its own list picker.
 struct AddItemSheet: View {
+    /// Non-nil switches the sheet into edit mode: prefilled from this item, title and
+    /// button text change, and `onSubmit` is expected to resolve to an update rather
+    /// than a create — the callback shape itself doesn't change either way, so the
+    /// caller decides.
+    private let isEditing: Bool
+
     var onClose: () -> Void
     var onSubmit: (
         _ productName: String,
@@ -16,23 +22,69 @@ struct AddItemSheet: View {
         _ metadata: WishListItemMetadata
     ) async throws -> Void
 
-    @State private var productName = ""
-    @State private var price = ""
-    @State private var quantity = "1"
-    @State private var url = ""
+    @State private var productName: String
+    @State private var price: String
+    @State private var quantity: String
+    @State private var url: String
     @State private var errorMessage: String?
     @State private var isSubmitting = false
 
-    @State private var metadataDraft = ItemMetadataDraft()
+    @State private var metadataDraft: ItemMetadataDraft
     @FocusState private var productNameFocused: Bool
 
     @State private var fetchedImageData: Data?
     @State private var isFetchingImage = false
     @State private var imageFetchTask: Task<Void, Never>?
 
+    init(
+        existingItem: WishListItem? = nil,
+        onClose: @escaping () -> Void,
+        onSubmit: @escaping (
+            _ productName: String,
+            _ price: Double,
+            _ quantity: Int,
+            _ url: String?,
+            _ imageData: Data?,
+            _ metadata: WishListItemMetadata
+        ) async throws -> Void
+    ) {
+        self.isEditing = existingItem != nil
+        self.onClose = onClose
+        self.onSubmit = onSubmit
+        _productName = State(initialValue: existingItem?.productName ?? "")
+        _price = State(initialValue: existingItem.map { String(format: "%.2f", $0.price) } ?? "")
+        _quantity = State(initialValue: existingItem.map { String($0.quantity) } ?? "1")
+        _url = State(initialValue: existingItem?.url ?? "")
+        _fetchedImageData = State(initialValue: existingItem?.imageData)
+        _metadataDraft = State(initialValue: existingItem.map { ItemMetadataDraft(from: $0.metadata) } ?? ItemMetadataDraft())
+    }
+
+    init(
+        existingItem: CollaborativeItem?,
+        onClose: @escaping () -> Void,
+        onSubmit: @escaping (
+            _ productName: String,
+            _ price: Double,
+            _ quantity: Int,
+            _ url: String?,
+            _ imageData: Data?,
+            _ metadata: WishListItemMetadata
+        ) async throws -> Void
+    ) {
+        self.isEditing = existingItem != nil
+        self.onClose = onClose
+        self.onSubmit = onSubmit
+        _productName = State(initialValue: existingItem?.productName ?? "")
+        _price = State(initialValue: existingItem.map { String(format: "%.2f", $0.price) } ?? "")
+        _quantity = State(initialValue: existingItem.map { String($0.quantity) } ?? "1")
+        _url = State(initialValue: existingItem?.url ?? "")
+        _fetchedImageData = State(initialValue: existingItem?.imageData)
+        _metadataDraft = State(initialValue: existingItem.map { ItemMetadataDraft(from: $0.metadata) } ?? ItemMetadataDraft())
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
-            Label("Add Item", systemImage: "plus.circle.fill")
+            Label(isEditing ? "Edit Item" : "Add Item", systemImage: isEditing ? "pencil.circle.fill" : "plus.circle.fill")
                 .font(.title2.bold())
                 .foregroundStyle(.tint)
 
@@ -139,7 +191,7 @@ struct AddItemSheet: View {
                 Spacer()
                 Button("Cancel", action: onClose)
                     .disabled(isSubmitting)
-                Button("Add to List", action: submit)
+                Button(isEditing ? "Save Changes" : "Add to List", action: submit)
                     .keyboardShortcut(.defaultAction)
                     .buttonStyle(.borderedProminent)
                     .disabled(isSubmitting || !isValid)

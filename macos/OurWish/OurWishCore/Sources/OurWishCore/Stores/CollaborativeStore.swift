@@ -76,22 +76,29 @@ public final class CollaborativeStore: ErrorReporting {
 
     // MARK: Items
 
-    public func addItem(productName: String, price: Double, quantity: Int, url: String?, imageData: Data? = nil) async throws {
+    public func addItem(
+        productName: String, price: Double, quantity: Int, url: String?,
+        imageData: Data? = nil, metadata: WishListItemMetadata = .empty
+    ) async throws {
         guard let userId, let listId = selectedListId else {
             throw RepositoryError.collaborativeListNotFound
         }
         _ = try await service.addCollaborativeItem(
             listId: listId, userId: userId,
-            productName: productName, price: price, quantity: quantity, url: url, imageData: imageData
+            productName: productName, price: price, quantity: quantity, url: url,
+            imageData: imageData, metadata: metadata
         )
         await refreshItems()
     }
 
-    public func updateItem(_ itemId: Int64, productName: String, price: Double, quantity: Int, url: String?) async throws {
+    public func updateItem(
+        _ itemId: Int64, productName: String, price: Double, quantity: Int, url: String?,
+        metadata: WishListItemMetadata = .empty
+    ) async throws {
         guard let userId, let listId = selectedListId else { return }
         try await service.updateCollaborativeItem(
             itemId: itemId, listId: listId, userId: userId,
-            productName: productName, price: price, quantity: quantity, url: url
+            productName: productName, price: price, quantity: quantity, url: url, metadata: metadata
         )
         await refreshItems()
     }
@@ -99,6 +106,12 @@ public final class CollaborativeStore: ErrorReporting {
     public func setPurchased(_ itemId: Int64, isPurchased: Bool) async throws {
         guard let userId, let listId = selectedListId else { return }
         try await service.setCollaborativeItemPurchased(itemId: itemId, listId: listId, userId: userId, isPurchased: isPurchased)
+        await refreshItems()
+    }
+
+    public func setHidden(_ itemId: Int64, isHidden: Bool) async throws {
+        guard let userId, let listId = selectedListId else { return }
+        try await service.setCollaborativeItemHidden(itemId: itemId, listId: listId, userId: userId, isHidden: isHidden)
         await refreshItems()
     }
 
