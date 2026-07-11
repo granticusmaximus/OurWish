@@ -2,7 +2,7 @@ import Foundation
 import GRDB
 
 /// Resolves the on-disk location of the OurWish SQLite database and owns the single
-/// `DatabaseQueue` used throughout the app.
+/// `DatabasePool` used throughout the app.
 ///
 /// The database intentionally lives outside the app bundle, at
 /// `~/Library/Application Support/OurWish/ourwish.db`, so a Debug build launched from
@@ -35,24 +35,30 @@ public enum DatabaseManager {
             .appendingPathComponent("ourwish.db")
     }
 
-    /// Opens (creating if necessary), migrates, and seeds the database at the resolved path.
-    public static func makeQueue() throws -> DatabaseQueue {
+    /// Opens (creating if necessary), migrates, and seeds the database at the resolved
+    /// path. A `DatabasePool` (WAL mode, one writer + a pool of concurrent readers)
+    /// rather than a `DatabaseQueue` (one serialized connection) — this database is
+    /// accessed both by the native UI and, whenever the embedded HTTP server is
+    /// running in-process (see `OurWishApp`), by every request that server handles.
+    /// With a single `DatabaseQueue` those two callers would serialize behind each
+    /// other; `DatabasePool` lets UI reads and server reads proceed concurrently.
+    public static func makeDatabase() throws -> DatabasePool {
         let url = try resolveDatabaseURL()
         try FileManager.default.createDirectory(
             at: url.deletingLastPathComponent(),
             withIntermediateDirectories: true
         )
 
-        let dbQueue = try DatabaseQueue(path: url.path)
-        try AppDatabase.migrator.migrate(dbQueue)
-        try AppDatabase.seedDefaultUserIfNeeded(dbQueue)
-        return dbQueue
+        let dbPool = try DatabasePool(path: url.path)
+        try AppDatabase.migrator.migrate(dbPool)
+        try AppDatabase.seedDefaultUserIfNeeded(dbPool)
+        return dbPool
     }
 
-    /// The shared, process-wide database queue. Lazily created on first access.
-    public static let shared: DatabaseQueue = {
+    /// The shared, process-wide database connection. Lazily created on first access.
+    public static let shared: DatabasePool = {
         do {
-            return try makeQueue()
+            return try makeDatabase()
         } catch {
             fatalError("Failed to open OurWish database: \(error)")
         }

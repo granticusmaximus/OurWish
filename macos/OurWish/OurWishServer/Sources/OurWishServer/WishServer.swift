@@ -3,7 +3,7 @@ import Hummingbird
 import OurWishCore
 
 /// The embedded HTTP API — runs inside the same process as the SwiftUI app, calling
-/// directly into `OurWishCore`'s repositories against the same `DatabaseQueue` the
+/// directly into `OurWishCore`'s repositories against the same `DatabasePool` the
 /// native UI uses. No second database connection, no duplicated business logic.
 public struct WishServer: Sendable {
     /// The port used both by the app (`OurWishApp.swift`) and the standalone

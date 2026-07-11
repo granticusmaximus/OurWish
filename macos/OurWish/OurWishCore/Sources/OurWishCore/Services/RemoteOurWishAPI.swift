@@ -482,7 +482,7 @@ public actor RemoteOurWishAPI: AuthStoreService, WishListStoreService, Collabora
     }
 
     private func makeWishListItem(from item: RemoteItem, listId: Int64, userId: Int64) async -> WishListItem {
-        let imageData = await loadImageData(from: item.imageURL)
+        let imageData = await loadCachedItemImageData(from: item.imageURL)
         return WishListItem(
             id: item.id,
             userId: userId,
@@ -515,7 +515,7 @@ public actor RemoteOurWishAPI: AuthStoreService, WishListStoreService, Collabora
     }
 
     private func makeCollaborativeItem(from item: RemoteItem, listId: Int64) async -> CollaborativeItem {
-        let imageData = await loadImageData(from: item.imageURL)
+        let imageData = await loadCachedItemImageData(from: item.imageURL)
         return CollaborativeItem(
             id: item.id,
             listId: listId,
@@ -526,6 +526,26 @@ public actor RemoteOurWishAPI: AuthStoreService, WishListStoreService, Collabora
             isPurchased: item.isPurchased,
             imageData: imageData
         )
+    }
+
+    /// `WishListStore`/`CollaborativeStore` call `refreshItems()` after every mutation
+    /// (add, edit, purchase-toggle, hide-toggle, delete), which re-fetches the whole
+    /// list — including every unchanged item's image — every time. An item's image
+    /// never changes after creation today (`WishListRepository.updateItem`'s SQL
+    /// doesn't touch `image_data`, in either local or remote mode), so it's safe to
+    /// fetch each item's image once per path and reuse it on every later refresh. If an
+    /// "edit item photo" feature is ever added, this cache will need to be invalidated
+    /// (or keyed by something that changes when the photo does) alongside that work.
+    private var itemImageCache: [String: Data] = [:]
+
+    private func loadCachedItemImageData(from path: String?) async -> Data? {
+        guard let path else { return nil }
+        if let cached = itemImageCache[path] {
+            return cached
+        }
+        let data = await loadImageData(from: path)
+        itemImageCache[path] = data
+        return data
     }
 
     private func loadImageData(from path: String?) async -> Data? {

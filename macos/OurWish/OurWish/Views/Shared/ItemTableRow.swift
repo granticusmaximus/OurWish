@@ -31,6 +31,9 @@ struct ItemTableRow: View {
             } else {
                 HStack(spacing: 8) {
                     thumbnail
+                        .task(id: item.imageData) {
+                            cachedThumbnail = item.imageData.flatMap(NSImage.init(data:))
+                        }
                     Text(item.productName)
                 }
             }
@@ -100,10 +103,12 @@ struct ItemTableRow: View {
         return (draft.parsedPrice ?? item.price) * Double(draft.parsedQuantity ?? item.quantity)
     }
 
+    @State private var cachedThumbnail: NSImage?
+
     @ViewBuilder
     private var thumbnail: some View {
-        if let imageData = item.imageData, let nsImage = NSImage(data: imageData) {
-            Image(nsImage: nsImage)
+        if let cachedThumbnail {
+            Image(nsImage: cachedThumbnail)
                 .resizable()
                 .scaledToFill()
                 .frame(width: 28, height: 28)
