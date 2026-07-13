@@ -107,6 +107,7 @@ public struct LocalWishListStoreService: WishListStoreService {
         price: Double,
         quantity: Int,
         url: String?,
+        imageData: Data?,
         metadata: WishListItemMetadata
     ) async throws {
         try repository.updateItem(
@@ -116,6 +117,7 @@ public struct LocalWishListStoreService: WishListStoreService {
             price: price,
             quantity: quantity,
             url: url,
+            imageData: imageData,
             metadata: metadata
         )
     }
@@ -192,6 +194,7 @@ public struct LocalCollaborativeStoreService: CollaborativeStoreService {
         price: Double,
         quantity: Int,
         url: String?,
+        imageData: Data?,
         metadata: WishListItemMetadata
     ) async throws {
         try repository.updateItem(
@@ -202,6 +205,7 @@ public struct LocalCollaborativeStoreService: CollaborativeStoreService {
             price: price,
             quantity: quantity,
             url: url,
+            imageData: imageData,
             metadata: metadata
         )
     }

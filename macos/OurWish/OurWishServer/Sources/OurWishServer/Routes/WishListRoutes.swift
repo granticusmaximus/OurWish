@@ -47,10 +47,17 @@ struct UpdateItemRequest: Decodable {
     let price: Double
     let quantity: Int
     let url: String?
+    /// Same semantics as `CreateItemRequest.imageBase64`/`clientResolvedImage`: nil
+    /// `imageBase64` with `clientResolvedImage == true` means the client explicitly
+    /// cleared the photo, not "leave it alone." When `clientResolvedImage` is omitted
+    /// (e.g. the PWA, which never resolves a photo client-side), the route handler
+    /// preserves the item's existing photo unless `url` itself changed.
+    let imageBase64: String?
+    let clientResolvedImage: Bool?
     let metadata: WishListItemMetadata
 
     private enum CodingKeys: String, CodingKey {
-        case productName, price, quantity, url
+        case productName, price, quantity, url, imageBase64, clientResolvedImage
     }
 
     init(from decoder: Decoder) throws {
@@ -59,6 +66,8 @@ struct UpdateItemRequest: Decodable {
         price = try container.decode(Double.self, forKey: .price)
         quantity = try container.decode(Int.self, forKey: .quantity)
         url = try container.decodeIfPresent(String.self, forKey: .url)
+        imageBase64 = try container.decodeIfPresent(String.self, forKey: .imageBase64)
+        clientResolvedImage = try container.decodeIfPresent(Bool.self, forKey: .clientResolvedImage)
         metadata = try WishListItemMetadata(from: decoder)
     }
 }
@@ -174,12 +183,35 @@ struct WishListRoutes {
             let userId = try requireUserId(context)
             guard let itemId = context.parameters.get("id", as: Int64.self) else { throw HTTPError(.badRequest) }
             let body = try await request.decode(as: UpdateItemRequest.self, context: context)
+
+            guard let existingItem = try repository.item(id: itemId, userId: userId) else {
+                throw RepositoryError.itemNotFound.httpError
+            }
+
+            // Prefer a photo the client already resolved (including a deliberate "no
+            // photo"). Otherwise, only auto-fetch when the URL actually changed — a
+            // routine metadata-only edit (the PWA's case, which never resolves a photo
+            // client-side) must not silently wipe or re-fetch an unrelated photo.
+            var imageData: Data?
+            if body.clientResolvedImage == true {
+                imageData = body.imageBase64.flatMap { base64 in
+                    Data(base64Encoded: base64).flatMap {
+                        ImageResizing.resizedJPEGData(from: $0, maxDimension: 512, compressionQuality: 0.8)
+                    }
+                }
+            } else if let url = body.url, !url.isEmpty, url != existingItem.url {
+                imageData = await ProductImageFetcher.fetchImageData(for: url) ?? existingItem.imageData
+            } else {
+                imageData = existingItem.imageData
+            }
+
             do {
                 try repository.updateItem(
                     itemId: itemId, userId: userId, productName: body.productName,
                     price: body.price,
                     quantity: body.quantity,
                     url: body.url,
+                    imageData: imageData,
                     metadata: body.metadata
                 )
                 return .noContent

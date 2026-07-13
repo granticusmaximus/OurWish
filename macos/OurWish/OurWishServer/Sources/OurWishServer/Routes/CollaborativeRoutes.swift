@@ -102,10 +102,29 @@ struct CollaborativeRoutes {
                 throw HTTPError(.badRequest)
             }
             let body = try await request.decode(as: UpdateItemRequest.self, context: context)
+
+            guard let existingItem = try repository.item(id: itemId, userId: userId) else {
+                throw RepositoryError.itemNotFound.httpError
+            }
+
+            var imageData: Data?
+            if body.clientResolvedImage == true {
+                imageData = body.imageBase64.flatMap { base64 in
+                    Data(base64Encoded: base64).flatMap {
+                        ImageResizing.resizedJPEGData(from: $0, maxDimension: 512, compressionQuality: 0.8)
+                    }
+                }
+            } else if let url = body.url, !url.isEmpty, url != existingItem.url {
+                imageData = await ProductImageFetcher.fetchImageData(for: url) ?? existingItem.imageData
+            } else {
+                imageData = existingItem.imageData
+            }
+
             do {
                 try repository.updateItem(
                     itemId: itemId, listId: listId, userId: userId, productName: body.productName,
-                    price: body.price, quantity: body.quantity, url: body.url, metadata: body.metadata
+                    price: body.price, quantity: body.quantity, url: body.url,
+                    imageData: imageData, metadata: body.metadata
                 )
                 return .noContent
             } catch let error as RepositoryError {

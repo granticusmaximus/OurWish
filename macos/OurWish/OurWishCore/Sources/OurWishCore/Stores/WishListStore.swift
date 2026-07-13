@@ -90,13 +90,14 @@ public final class WishListStore: ErrorReporting {
         price: Double,
         quantity: Int,
         url: String?,
+        imageData: Data? = nil,
         metadata: WishListItemMetadata = .empty
     ) async throws {
         guard let userId else { return }
         try await service.updateWishListItem(
             itemId: itemId, userId: userId,
             productName: productName, price: price, quantity: quantity, url: url,
-            metadata: metadata
+            imageData: imageData, metadata: metadata
         )
         await refreshItems()
     }

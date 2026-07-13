@@ -139,14 +139,14 @@ actor FakeWishListStoreService: WishListStoreService {
 
     func updateWishListItem(
         itemId: Int64, userId: Int64, productName: String, price: Double, quantity: Int,
-        url: String?, metadata: WishListItemMetadata
+        url: String?, imageData: Data?, metadata: WishListItemMetadata
     ) async throws {
         if let errorToThrow { throw errorToThrow }
         guard let index = items.firstIndex(where: { $0.id == itemId }) else { return }
         items[index] = WishListItem(
             id: itemId, userId: userId, listId: items[index].listId, productName: productName,
             price: price, quantity: quantity, url: url, isPurchased: items[index].isPurchased,
-            isHidden: items[index].isHidden, imageData: items[index].imageData, metadata: metadata
+            isHidden: items[index].isHidden, imageData: imageData, metadata: metadata
         )
     }
 
@@ -234,7 +234,7 @@ actor FakeCollaborativeStoreService: CollaborativeStoreService {
 
     func updateCollaborativeItem(
         itemId: Int64, listId: Int64, userId: Int64, productName: String, price: Double, quantity: Int, url: String?,
-        metadata: WishListItemMetadata
+        imageData: Data?, metadata: WishListItemMetadata
     ) async throws {
         if let errorToThrow { throw errorToThrow }
         guard let index = items.firstIndex(where: { $0.id == itemId }) else { return }
@@ -242,6 +242,7 @@ actor FakeCollaborativeStoreService: CollaborativeStoreService {
         items[index].price = price
         items[index].quantity = quantity
         items[index].url = url
+        items[index].imageData = imageData
         items[index].category = metadata.category
         items[index].manufacturer = metadata.manufacturer
         items[index].msrp = metadata.msrp

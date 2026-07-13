@@ -93,12 +93,13 @@ public final class CollaborativeStore: ErrorReporting {
 
     public func updateItem(
         _ itemId: Int64, productName: String, price: Double, quantity: Int, url: String?,
-        metadata: WishListItemMetadata = .empty
+        imageData: Data? = nil, metadata: WishListItemMetadata = .empty
     ) async throws {
         guard let userId, let listId = selectedListId else { return }
         try await service.updateCollaborativeItem(
             itemId: itemId, listId: listId, userId: userId,
-            productName: productName, price: price, quantity: quantity, url: url, metadata: metadata
+            productName: productName, price: price, quantity: quantity, url: url,
+            imageData: imageData, metadata: metadata
         )
         await refreshItems()
     }

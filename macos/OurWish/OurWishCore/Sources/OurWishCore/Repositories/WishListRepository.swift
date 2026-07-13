@@ -129,6 +129,7 @@ public final class WishListRepository: Sendable {
         price: Double,
         quantity: Int,
         url: String?,
+        imageData: Data? = nil,
         metadata: WishListItemMetadata = .empty
     ) throws {
         try validateItemInput(productName: productName, quantity: quantity)
@@ -142,6 +143,7 @@ public final class WishListRepository: Sendable {
                         price = ?,
                         quantity = ?,
                         url = ?,
+                        image_data = ?,
                         category = ?,
                         manufacturer = ?,
                         msrp = ?,
@@ -164,6 +166,7 @@ public final class WishListRepository: Sendable {
                     price,
                     quantity,
                     url,
+                    imageData,
                     metadata.category,
                     metadata.manufacturer,
                     metadata.msrp,

@@ -41,6 +41,7 @@ public protocol WishListStoreService: Sendable {
         price: Double,
         quantity: Int,
         url: String?,
+        imageData: Data?,
         metadata: WishListItemMetadata
     ) async throws
     func setWishListItemPurchased(itemId: Int64, userId: Int64, isPurchased: Bool) async throws
@@ -72,6 +73,7 @@ public protocol CollaborativeStoreService: Sendable {
         price: Double,
         quantity: Int,
         url: String?,
+        imageData: Data?,
         metadata: WishListItemMetadata
     ) async throws
     func setCollaborativeItemPurchased(itemId: Int64, listId: Int64, userId: Int64, isPurchased: Bool) async throws

@@ -244,6 +244,7 @@ public actor RemoteOurWishAPI: AuthStoreService, WishListStoreService, Collabora
         price: Double,
         quantity: Int,
         url: String?,
+        imageData: Data?,
         metadata: WishListItemMetadata
     ) async throws {
         _ = userId
@@ -252,6 +253,8 @@ public actor RemoteOurWishAPI: AuthStoreService, WishListStoreService, Collabora
             "price": price,
             "quantity": quantity,
             "url": url,
+            "imageBase64": imageData?.base64EncodedString(),
+            "clientResolvedImage": true,
         ]
         for (key, value) in try metadataJSONFields(metadata) {
             body[key] = value
@@ -370,6 +373,7 @@ public actor RemoteOurWishAPI: AuthStoreService, WishListStoreService, Collabora
         price: Double,
         quantity: Int,
         url: String?,
+        imageData: Data?,
         metadata: WishListItemMetadata
     ) async throws {
         _ = userId
@@ -378,6 +382,8 @@ public actor RemoteOurWishAPI: AuthStoreService, WishListStoreService, Collabora
             "price": price,
             "quantity": quantity,
             "url": url,
+            "imageBase64": imageData?.base64EncodedString(),
+            "clientResolvedImage": true,
         ]
         for (key, value) in try metadataJSONFields(metadata) {
             body[key] = value

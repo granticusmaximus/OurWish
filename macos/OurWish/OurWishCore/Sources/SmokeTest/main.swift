@@ -341,12 +341,30 @@ do {
     let refetched = try repo.items(listId: list.id!, userId: user.id!, purchased: false).first
     check("product image persists to the database", refetched?.imageData == photoData)
 
+    // updateItem is an unambiguous setter (like addItem) — passing the existing image
+    // through preserves it. The "preserve unless the client resolved a new one" policy
+    // lives at the server route layer, not here.
     try repo.updateItem(
         itemId: item.id!, userId: user.id!, productName: "Espresso Machine (Deluxe)",
-        price: 219, quantity: 1, url: "https://example.com/product"
+        price: 219, quantity: 1, url: "https://example.com/product", imageData: photoData
     )
     let afterEdit = try repo.items(listId: list.id!, userId: user.id!, purchased: false).first
-    check("editing an item does not clear its existing product image", afterEdit?.imageData == photoData)
+    check("updateItem preserves the image when passed through", afterEdit?.imageData == photoData)
+
+    let newPhotoData = Data([0xFF, 0xD8, 0x00, 0x01])
+    try repo.updateItem(
+        itemId: item.id!, userId: user.id!, productName: "Espresso Machine (Deluxe)",
+        price: 219, quantity: 1, url: "https://example.com/product", imageData: newPhotoData
+    )
+    let afterReplace = try repo.items(listId: list.id!, userId: user.id!, purchased: false).first
+    check("updateItem replaces the image with a new one", afterReplace?.imageData == newPhotoData)
+
+    try repo.updateItem(
+        itemId: item.id!, userId: user.id!, productName: "Espresso Machine (Deluxe)",
+        price: 219, quantity: 1, url: "https://example.com/product", imageData: nil
+    )
+    let afterClear = try repo.items(listId: list.id!, userId: user.id!, purchased: false).first
+    check("updateItem clears the image when passed nil", afterClear?.imageData == nil)
 }
 
 // MARK: - CollaborativeListRepository
@@ -426,6 +444,21 @@ do {
 
     let refetched = try repo.items(listId: list.id!, userId: userA.id!, purchased: false).first
     check("collaborative product image persists to the database", refetched?.imageData == photoData)
+
+    let newPhotoData = Data([0xFF, 0xD8, 0x00, 0x01])
+    try repo.updateItem(
+        itemId: item.id!, listId: list.id!, userId: userA.id!, productName: "Sunscreen",
+        price: 12.5, quantity: 2, url: "https://example.com/sunscreen", imageData: newPhotoData
+    )
+    let afterReplace = try repo.items(listId: list.id!, userId: userA.id!, purchased: false).first
+    check("collaborative updateItem replaces the image with a new one", afterReplace?.imageData == newPhotoData)
+
+    try repo.updateItem(
+        itemId: item.id!, listId: list.id!, userId: userA.id!, productName: "Sunscreen",
+        price: 12.5, quantity: 2, url: "https://example.com/sunscreen", imageData: nil
+    )
+    let afterClear = try repo.items(listId: list.id!, userId: userA.id!, purchased: false).first
+    check("collaborative updateItem clears the image when passed nil", afterClear?.imageData == nil)
 }
 
 do {
