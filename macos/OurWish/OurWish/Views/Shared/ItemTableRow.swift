@@ -17,6 +17,8 @@ struct ItemTableRow: View {
     var onDelete: () -> Void
     var onToggleHidden: (() -> Void)?
     var onEditDetails: (() -> Void)?
+    var onMoveUp: (() -> Void)?
+    var onMoveDown: (() -> Void)?
 
     var body: some View {
         GridRow {
@@ -98,6 +100,20 @@ struct ItemTableRow: View {
                             Image(systemName: item.isHidden ? "eye" : "eye.slash")
                         }
                         .help(item.isHidden ? "Show" : "Hide")
+                    }
+
+                    if let onMoveUp {
+                        Button(action: onMoveUp) {
+                            Image(systemName: "chevron.up")
+                        }
+                        .help("Move up")
+                    }
+
+                    if let onMoveDown {
+                        Button(action: onMoveDown) {
+                            Image(systemName: "chevron.down")
+                        }
+                        .help("Move down")
                     }
                 }
             }

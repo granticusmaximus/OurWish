@@ -40,7 +40,10 @@ struct CollaborativeItemsTableView: View {
                 onToggleHidden: { id, isHidden in
                     run { try await store.setHidden(id, isHidden: isHidden) }
                 },
-                onEditDetails: onEditItem
+                onEditDetails: onEditItem,
+                onMove: { id, direction in
+                    run { try await store.moveItem(id, direction: direction) }
+                }
             )
         }
     }

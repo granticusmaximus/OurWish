@@ -166,6 +166,15 @@ actor FakeWishListStoreService: WishListStoreService {
         if let errorToThrow { throw errorToThrow }
         items.removeAll { $0.id == itemId }
     }
+
+    func reorderWishListItems(listId: Int64, userId: Int64, orderedItemIds: [Int64]) async throws {
+        if let errorToThrow { throw errorToThrow }
+        let indexById = Dictionary(uniqueKeysWithValues: orderedItemIds.enumerated().map { ($1, $0) })
+        items.sort { a, b in
+            guard let ai = indexById[a.id ?? -1], let bi = indexById[b.id ?? -1] else { return false }
+            return ai < bi
+        }
+    }
 }
 
 actor FakeCollaborativeStoreService: CollaborativeStoreService {
@@ -275,5 +284,14 @@ actor FakeCollaborativeStoreService: CollaborativeStoreService {
     func deleteCollaborativeItem(itemId: Int64, listId: Int64, userId: Int64) async throws {
         if let errorToThrow { throw errorToThrow }
         items.removeAll { $0.id == itemId }
+    }
+
+    func reorderCollaborativeItems(listId: Int64, userId: Int64, orderedItemIds: [Int64]) async throws {
+        if let errorToThrow { throw errorToThrow }
+        let indexById = Dictionary(uniqueKeysWithValues: orderedItemIds.enumerated().map { ($1, $0) })
+        items.sort { a, b in
+            guard let ai = indexById[a.id ?? -1], let bi = indexById[b.id ?? -1] else { return false }
+            return ai < bi
+        }
     }
 }

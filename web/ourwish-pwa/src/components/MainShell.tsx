@@ -254,6 +254,31 @@ export function MainShell({ onCreateNewUser }: { onCreateNewUser: () => void }) 
     await refreshSelectedItems()
   }
 
+  async function handleMoveItem(id: number, direction: 'up' | 'down') {
+    if (!selectedList) return
+    const currentIndex = activeItems.findIndex((item) => item.id === id)
+    if (currentIndex === -1) return
+    const isHidden = activeItems[currentIndex].isHidden
+    const groupIndices = activeItems
+      .map((_, index) => index)
+      .filter((index) => activeItems[index].isHidden === isHidden)
+    const position = groupIndices.indexOf(currentIndex)
+    const swapPosition = direction === 'up' ? position - 1 : position + 1
+    if (swapPosition < 0 || swapPosition >= groupIndices.length) return
+    const swapIndex = groupIndices[swapPosition]
+
+    const reordered = [...activeItems]
+    ;[reordered[currentIndex], reordered[swapIndex]] = [reordered[swapIndex], reordered[currentIndex]]
+    const orderedItemIds = reordered.map((item) => item.id)
+
+    if (selectedList.kind === 'wish') {
+      await api.reorderWishListItems(selectedList.id, orderedItemIds)
+    } else {
+      await api.reorderCollaborativeItems(selectedList.id, orderedItemIds)
+    }
+    await refreshSelectedItems()
+  }
+
   async function handleDeleteItem(id: number) {
     if (!selectedList) return
     if (selectedList.kind === 'wish') {
@@ -538,6 +563,7 @@ export function MainShell({ onCreateNewUser }: { onCreateNewUser: () => void }) 
                   onTogglePurchased={handleTogglePurchased}
                   onToggleHidden={handleToggleHidden}
                   onDelete={handleDeleteItem}
+                  onMove={handleMoveItem}
                 />
               )}
             </>

@@ -1,5 +1,11 @@
 import Foundation
 
+/// Which neighboring item (within the same visibility group) an item should swap
+/// places with. See `WishListStore.moveItem`/`CollaborativeStore.moveItem`.
+public enum ItemMoveDirection: Sendable {
+    case up, down
+}
+
 public protocol AuthStoreService: Sendable {
     func userCount() async throws -> Int
     func login(email: String, password: String) async throws -> User
@@ -47,6 +53,7 @@ public protocol WishListStoreService: Sendable {
     func setWishListItemPurchased(itemId: Int64, userId: Int64, isPurchased: Bool) async throws
     func setWishListItemHidden(itemId: Int64, userId: Int64, isHidden: Bool) async throws
     func deleteWishListItem(itemId: Int64, userId: Int64) async throws
+    func reorderWishListItems(listId: Int64, userId: Int64, orderedItemIds: [Int64]) async throws
 }
 
 public protocol CollaborativeStoreService: Sendable {
@@ -79,4 +86,5 @@ public protocol CollaborativeStoreService: Sendable {
     func setCollaborativeItemPurchased(itemId: Int64, listId: Int64, userId: Int64, isPurchased: Bool) async throws
     func setCollaborativeItemHidden(itemId: Int64, listId: Int64, userId: Int64, isHidden: Bool) async throws
     func deleteCollaborativeItem(itemId: Int64, listId: Int64, userId: Int64) async throws
+    func reorderCollaborativeItems(listId: Int64, userId: Int64, orderedItemIds: [Int64]) async throws
 }

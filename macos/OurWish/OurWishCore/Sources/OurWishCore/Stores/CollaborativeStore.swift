@@ -122,6 +122,23 @@ public final class CollaborativeStore: ErrorReporting {
         await refreshItems()
     }
 
+    /// Mirrors `WishListStore.moveItem` — swaps `itemId` with its nearest neighbor
+    /// of the same visibility, since visible/hidden items render as separate tables.
+    public func moveItem(_ itemId: Int64, direction: ItemMoveDirection) async throws {
+        guard let userId, let listId = selectedListId else { return }
+        guard let currentIndex = items.firstIndex(where: { $0.id == itemId }) else { return }
+        let isHidden = items[currentIndex].isHidden
+        let groupIndices = items.indices.filter { items[$0].isHidden == isHidden }
+        guard let position = groupIndices.firstIndex(of: currentIndex) else { return }
+        let swapPosition = direction == .up ? position - 1 : position + 1
+        guard groupIndices.indices.contains(swapPosition) else { return }
+
+        var reordered = items
+        reordered.swapAt(currentIndex, groupIndices[swapPosition])
+        try await service.reorderCollaborativeItems(listId: listId, userId: userId, orderedItemIds: reordered.compactMap(\.id))
+        await refreshItems()
+    }
+
     // MARK: Refresh
 
     private func refreshLists() async {

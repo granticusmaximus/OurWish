@@ -260,6 +260,7 @@ public actor RemoteOurWishAPI: AuthStoreService, WishListStoreService, Collabora
             body[key] = value
         }
         try await requestNoContent(path: "/api/v1/items/\(itemId)", method: "PUT", body: body)
+        itemImageCache.removeValue(forKey: "/api/v1/items/\(itemId)/image")
     }
 
     public func setWishListItemPurchased(itemId: Int64, userId: Int64, isPurchased: Bool) async throws {
@@ -283,6 +284,15 @@ public actor RemoteOurWishAPI: AuthStoreService, WishListStoreService, Collabora
     public func deleteWishListItem(itemId: Int64, userId: Int64) async throws {
         _ = userId
         try await requestNoContent(path: "/api/v1/items/\(itemId)", method: "DELETE")
+    }
+
+    public func reorderWishListItems(listId: Int64, userId: Int64, orderedItemIds: [Int64]) async throws {
+        _ = userId
+        try await requestNoContent(
+            path: "/api/v1/wishlists/\(listId)/items/reorder",
+            method: "PUT",
+            body: ["orderedItemIds": orderedItemIds]
+        )
     }
 
     public func partners(excluding userId: Int64) async throws -> [User] {
@@ -393,6 +403,7 @@ public actor RemoteOurWishAPI: AuthStoreService, WishListStoreService, Collabora
             method: "PUT",
             body: body
         )
+        itemImageCache.removeValue(forKey: "/api/v1/collaborative-items/\(itemId)/image")
     }
 
     public func setCollaborativeItemPurchased(itemId: Int64, listId: Int64, userId: Int64, isPurchased: Bool) async throws {
@@ -416,6 +427,15 @@ public actor RemoteOurWishAPI: AuthStoreService, WishListStoreService, Collabora
     public func deleteCollaborativeItem(itemId: Int64, listId: Int64, userId: Int64) async throws {
         _ = userId
         try await requestNoContent(path: "/api/v1/collaborative/lists/\(listId)/items/\(itemId)", method: "DELETE")
+    }
+
+    public func reorderCollaborativeItems(listId: Int64, userId: Int64, orderedItemIds: [Int64]) async throws {
+        _ = userId
+        try await requestNoContent(
+            path: "/api/v1/collaborative/lists/\(listId)/items/reorder",
+            method: "PUT",
+            body: ["orderedItemIds": orderedItemIds]
+        )
     }
 
     private func request<Response: Decodable>(
@@ -570,12 +590,12 @@ public actor RemoteOurWishAPI: AuthStoreService, WishListStoreService, Collabora
 
     /// `WishListStore`/`CollaborativeStore` call `refreshItems()` after every mutation
     /// (add, edit, purchase-toggle, hide-toggle, delete), which re-fetches the whole
-    /// list — including every unchanged item's image — every time. An item's image
-    /// never changes after creation today (`WishListRepository.updateItem`'s SQL
-    /// doesn't touch `image_data`, in either local or remote mode), so it's safe to
-    /// fetch each item's image once per path and reuse it on every later refresh. If an
-    /// "edit item photo" feature is ever added, this cache will need to be invalidated
-    /// (or keyed by something that changes when the photo does) alongside that work.
+    /// list — including every unchanged item's image — every time. Since the image path
+    /// is stable per item (`/api/v1/items/{id}/image`) and doesn't change when the photo
+    /// does, `updateWishListItem`/`updateCollaborativeItem` explicitly evict the
+    /// corresponding entry on every edit so a replaced or cleared photo is never served
+    /// stale; every other mutation (purchase/hide toggles, delete) can't change the
+    /// image, so their entries are safe to keep.
     private var itemImageCache: [String: Data] = [:]
 
     private func loadCachedItemImageData(from path: String?) async -> Data? {

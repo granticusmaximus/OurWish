@@ -38,6 +38,7 @@ interface ItemsTableProps {
   onTogglePurchased: (id: number, isPurchased: boolean) => Promise<void>
   onToggleHidden?: (id: number, isHidden: boolean) => Promise<void>
   onDelete: (id: number) => Promise<void>
+  onMove?: (id: number, direction: 'up' | 'down') => Promise<void>
 }
 
 interface Draft {
@@ -163,6 +164,7 @@ export function ItemsTable({
   onTogglePurchased,
   onToggleHidden,
   onDelete,
+  onMove,
 }: ItemsTableProps) {
   const [editingId, setEditingId] = useState<number | null>(null)
   const [draft, setDraft] = useState<Draft>({
@@ -236,7 +238,7 @@ export function ItemsTable({
     })
   }
 
-  const renderRow = (item: Item) => {
+  const renderRow = (item: Item, index: number, groupLength: number) => {
     const isEditing = editingId === item.id
     const allMetadataChips = metadataSummary(item)
     const metadataChips = allMetadataChips.slice(0, 4)
@@ -502,6 +504,28 @@ export function ItemsTable({
                     {item.isHidden ? '👁️' : '🙈'}
                   </button>
                 )}
+                {onMove && index > 0 && (
+                  <button
+                    type="button"
+                    className="icon-btn"
+                    onClick={() => runAction(() => onMove(item.id, 'up'))}
+                    title="Move up"
+                    aria-label="Move up"
+                  >
+                    ▲
+                  </button>
+                )}
+                {onMove && index < groupLength - 1 && (
+                  <button
+                    type="button"
+                    className="icon-btn"
+                    onClick={() => runAction(() => onMove(item.id, 'down'))}
+                    title="Move down"
+                    aria-label="Move down"
+                  >
+                    ▼
+                  </button>
+                )}
               </>
             )}
           </div>
@@ -524,7 +548,7 @@ export function ItemsTable({
             <th>Actions</th>
           </tr>
         </thead>
-        <tbody>{rows.map(renderRow)}</tbody>
+        <tbody>{rows.map((item, index) => renderRow(item, index, rows.length))}</tbody>
         <tfoot>
           <tr>
             <td colSpan={columnCount}>Subtotal</td>

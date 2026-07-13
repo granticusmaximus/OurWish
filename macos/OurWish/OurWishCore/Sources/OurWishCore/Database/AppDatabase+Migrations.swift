@@ -144,6 +144,33 @@ extension AppDatabase {
             }
         }
 
+        // Adds an explicit per-item ordering column so items can be manually
+        // reordered rather than always sorted by created_at. Backfilled by ranking
+        // existing rows within each list by created_at DESC (rank 0 = newest), which
+        // matches the previous default order exactly — a zero-visible-change migration.
+        migrator.registerMigration("v7ItemSortOrder") { db in
+            try db.alter(table: "wish_list_items") { t in
+                t.add(column: "sort_order", .integer).notNull().defaults(to: 0)
+            }
+            try db.alter(table: "collaborative_items") { t in
+                t.add(column: "sort_order", .integer).notNull().defaults(to: 0)
+            }
+            try db.execute(sql: """
+                UPDATE wish_list_items
+                SET sort_order = (
+                    SELECT COUNT(*) FROM wish_list_items w2
+                    WHERE w2.list_id = wish_list_items.list_id AND w2.created_at > wish_list_items.created_at
+                )
+                """)
+            try db.execute(sql: """
+                UPDATE collaborative_items
+                SET sort_order = (
+                    SELECT COUNT(*) FROM collaborative_items c2
+                    WHERE c2.list_id = collaborative_items.list_id AND c2.created_at > collaborative_items.created_at
+                )
+                """)
+        }
+
         return migrator
     }
 }

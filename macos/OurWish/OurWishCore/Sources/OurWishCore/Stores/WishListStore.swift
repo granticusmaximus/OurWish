@@ -120,6 +120,25 @@ public final class WishListStore: ErrorReporting {
         await refreshItems()
     }
 
+    /// Swaps `itemId` with its nearest neighbor *of the same visibility* (visible
+    /// items and hidden items are reordered independently, since `ItemsTableView`
+    /// renders them as two separate mini-tables — swapping across that boundary
+    /// would either be an invisible no-op or move an item into the wrong table).
+    public func moveItem(_ itemId: Int64, direction: ItemMoveDirection) async throws {
+        guard let userId, let listId = selectedListId else { return }
+        guard let currentIndex = items.firstIndex(where: { $0.id == itemId }) else { return }
+        let isHidden = items[currentIndex].isHidden
+        let groupIndices = items.indices.filter { items[$0].isHidden == isHidden }
+        guard let position = groupIndices.firstIndex(of: currentIndex) else { return }
+        let swapPosition = direction == .up ? position - 1 : position + 1
+        guard groupIndices.indices.contains(swapPosition) else { return }
+
+        var reordered = items
+        reordered.swapAt(currentIndex, groupIndices[swapPosition])
+        try await service.reorderWishListItems(listId: listId, userId: userId, orderedItemIds: reordered.compactMap(\.id))
+        await refreshItems()
+    }
+
     // MARK: Refresh
 
     private func refreshLists() async {

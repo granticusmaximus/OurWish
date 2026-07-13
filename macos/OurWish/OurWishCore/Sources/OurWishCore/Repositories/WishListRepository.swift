@@ -86,7 +86,7 @@ public final class WishListRepository: Sendable {
             return try WishListItem
                 .filter(WishListItem.Columns.listId == listId)
                 .filter(WishListItem.Columns.isPurchased == purchased)
-                .order(Column("created_at").desc)
+                .order(Column("sort_order").asc)
                 .fetchAll(db)
         }
     }
@@ -107,6 +107,13 @@ public final class WishListRepository: Sendable {
         return try dbWriter.write { db in
             try assertOwnsList(listId, userId: userId, db: db)
 
+            // New items always sort before every existing item in the list, matching
+            // the previous "just-added items show up first" default (see the sort
+            // order migration's backfill, which ranks existing rows the same way).
+            let minOrder = try Int64.fetchOne(
+                db, sql: "SELECT MIN(sort_order) FROM wish_list_items WHERE list_id = ?", arguments: [listId]
+            )
+
             var item = WishListItem(
                 userId: userId,
                 listId: listId,
@@ -115,10 +122,26 @@ public final class WishListRepository: Sendable {
                 quantity: quantity,
                 url: url,
                 imageData: imageData,
-                metadata: metadata
+                metadata: metadata,
+                sortOrder: (minOrder ?? 1) - 1
             )
             try item.insert(db)
             return item
+        }
+    }
+
+    /// Assigns sequential `sort_order` values matching `orderedItemIds`'s order.
+    /// Ids that don't belong to this list/user are silently ignored (the caller
+    /// always derives this list from its own already-fetched items).
+    public func reorderItems(listId: Int64, userId: Int64, orderedItemIds: [Int64]) throws {
+        try dbWriter.write { db in
+            try assertOwnsList(listId, userId: userId, db: db)
+            for (index, itemId) in orderedItemIds.enumerated() {
+                try db.execute(
+                    sql: "UPDATE wish_list_items SET sort_order = ? WHERE id = ? AND list_id = ? AND user_id = ?",
+                    arguments: [index, itemId, listId, userId]
+                )
+            }
         }
     }
 

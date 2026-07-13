@@ -154,6 +154,11 @@ export const api = {
   setItemHidden: (id: number, isHidden: boolean) =>
     request<void>(`/api/v1/items/${id}/hidden`, { method: 'PUT', body: JSON.stringify({ isHidden }) }),
   deleteItem: (id: number) => request<void>(`/api/v1/items/${id}`, { method: 'DELETE' }),
+  reorderWishListItems: (id: number, orderedItemIds: number[]) =>
+    request<void>(`/api/v1/wishlists/${id}/items/reorder`, {
+      method: 'PUT',
+      body: JSON.stringify({ orderedItemIds }),
+    }),
 
   partners: () => request<Partner[]>('/api/v1/collaborative/partners'),
   collaborativeLists: () => request<CollaborativeList[]>('/api/v1/collaborative/lists'),
@@ -188,4 +193,9 @@ export const api = {
     }),
   deleteCollaborativeItem: (listId: number, itemId: number) =>
     request<void>(`/api/v1/collaborative/lists/${listId}/items/${itemId}`, { method: 'DELETE' }),
+  reorderCollaborativeItems: (listId: number, orderedItemIds: number[]) =>
+    request<void>(`/api/v1/collaborative/lists/${listId}/items/reorder`, {
+      method: 'PUT',
+      body: JSON.stringify({ orderedItemIds }),
+    }),
 }

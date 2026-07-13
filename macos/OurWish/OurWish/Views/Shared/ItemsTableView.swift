@@ -1,3 +1,4 @@
+import OurWishCore
 import SwiftUI
 
 /// Generic item table shared by `WishListItemsTableView` and
@@ -16,6 +17,7 @@ struct ItemsTableView: View {
     var onToggleHidden: ((Int64, Bool) -> Void)?
     var onRename: ((String) -> Void)?
     var onEditDetails: ((Int64) -> Void)?
+    var onMove: ((Int64, ItemMoveDirection) -> Void)?
 
     @State private var editingId: Int64?
     @State private var draft = ItemDraft()
@@ -101,7 +103,7 @@ struct ItemsTableView: View {
 
             Divider().gridCellColumns(columnCount)
 
-            ForEach(rows) { item in
+            ForEach(Array(rows.enumerated()), id: \.element.id) { index, item in
                 ItemTableRow(
                     item: item,
                     config: config,
@@ -119,7 +121,9 @@ struct ItemsTableView: View {
                     onToggleHidden: config.allowHideToggle
                         ? { onToggleHidden?(item.id, !item.isHidden) }
                         : nil,
-                    onEditDetails: onEditDetails.map { callback in { callback(item.id) } }
+                    onEditDetails: onEditDetails.map { callback in { callback(item.id) } },
+                    onMoveUp: (onMove != nil && index > 0) ? { onMove?(item.id, .up) } : nil,
+                    onMoveDown: (onMove != nil && index < rows.count - 1) ? { onMove?(item.id, .down) } : nil
                 )
             }
 

@@ -49,7 +49,10 @@ struct WishListItemsTableView: View {
                     guard let listId = store.selectedListId else { return }
                     run { try await store.renameList(listId, name: name) }
                 },
-                onEditDetails: onEditItem
+                onEditDetails: onEditItem,
+                onMove: { id, direction in
+                    run { try await store.moveItem(id, direction: direction) }
+                }
             )
         }
     }

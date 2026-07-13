@@ -95,6 +95,20 @@ struct CollaborativeRoutes {
             }
         }
 
+        // Registered before the `:itemId` PUT route below so the literal "reorder"
+        // segment matches here rather than failing Int64 parsing as an item id.
+        group.put("/collaborative/lists/:listId/items/reorder") { request, context -> HTTPResponse.Status in
+            let userId = try requireUserId(context)
+            guard let listId = context.parameters.get("listId", as: Int64.self) else { throw HTTPError(.badRequest) }
+            let body = try await request.decode(as: ReorderItemsRequest.self, context: context)
+            do {
+                try repository.reorderItems(listId: listId, userId: userId, orderedItemIds: body.orderedItemIds)
+                return .noContent
+            } catch let error as RepositoryError {
+                throw error.httpError
+            }
+        }
+
         group.put("/collaborative/lists/:listId/items/:itemId") { request, context -> HTTPResponse.Status in
             let userId = try requireUserId(context)
             guard let listId = context.parameters.get("listId", as: Int64.self),

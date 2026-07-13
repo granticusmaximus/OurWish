@@ -80,6 +80,11 @@ struct SetHiddenRequest: Codable {
     let isHidden: Bool
 }
 
+/// Shared with `CollaborativeRoutes`, same as `SetPurchasedRequest`/`SetHiddenRequest`.
+struct ReorderItemsRequest: Codable {
+    let orderedItemIds: [Int64]
+}
+
 struct ItemsResponseDTO: Encodable, ResponseEncodable {
     let active: [ItemDTO]
     let purchased: [ItemDTO]
@@ -174,6 +179,18 @@ struct WishListRoutes {
                     metadata: body.metadata
                 )
                 return ItemDTO(item)
+            } catch let error as RepositoryError {
+                throw error.httpError
+            }
+        }
+
+        group.put("/wishlists/:id/items/reorder") { request, context -> HTTPResponse.Status in
+            let userId = try requireUserId(context)
+            guard let listId = context.parameters.get("id", as: Int64.self) else { throw HTTPError(.badRequest) }
+            let body = try await request.decode(as: ReorderItemsRequest.self, context: context)
+            do {
+                try repository.reorderItems(listId: listId, userId: userId, orderedItemIds: body.orderedItemIds)
+                return .noContent
             } catch let error as RepositoryError {
                 throw error.httpError
             }

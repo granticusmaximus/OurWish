@@ -133,6 +133,10 @@ public struct LocalWishListStoreService: WishListStoreService {
     public func deleteWishListItem(itemId: Int64, userId: Int64) async throws {
         try repository.deleteItem(itemId: itemId, userId: userId)
     }
+
+    public func reorderWishListItems(listId: Int64, userId: Int64, orderedItemIds: [Int64]) async throws {
+        try repository.reorderItems(listId: listId, userId: userId, orderedItemIds: orderedItemIds)
+    }
 }
 
 public struct LocalCollaborativeStoreService: CollaborativeStoreService {
@@ -220,5 +224,9 @@ public struct LocalCollaborativeStoreService: CollaborativeStoreService {
 
     public func deleteCollaborativeItem(itemId: Int64, listId: Int64, userId: Int64) async throws {
         try repository.deleteItem(itemId: itemId, listId: listId, userId: userId)
+    }
+
+    public func reorderCollaborativeItems(listId: Int64, userId: Int64, orderedItemIds: [Int64]) async throws {
+        try repository.reorderItems(listId: listId, userId: userId, orderedItemIds: orderedItemIds)
     }
 }

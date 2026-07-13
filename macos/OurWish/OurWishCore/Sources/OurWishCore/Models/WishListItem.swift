@@ -149,6 +149,11 @@ public struct WishListItem: Codable, Identifiable, Equatable, Sendable {
     public var notes: String?
     public var availabilityStatus: String?
     public var dateRetrieved: Date?
+    /// Explicit manual ordering within the list, ascending. Deliberately never
+    /// surfaced over the wire (no DTO/PWA field) — order is implicit in the array
+    /// position of a `GET .../items` response instead. See `WishListRepository`'s
+    /// `reorderItems`.
+    public var sortOrder: Int64
     public var createdAt: Date
 
     public init(
@@ -163,6 +168,7 @@ public struct WishListItem: Codable, Identifiable, Equatable, Sendable {
         isHidden: Bool = false,
         imageData: Data? = nil,
         metadata: WishListItemMetadata = .empty,
+        sortOrder: Int64 = 0,
         createdAt: Date = Date()
     ) {
         self.id = id
@@ -175,6 +181,7 @@ public struct WishListItem: Codable, Identifiable, Equatable, Sendable {
         self.isPurchased = isPurchased
         self.isHidden = isHidden
         self.imageData = imageData
+        self.sortOrder = sortOrder
         self.category = metadata.category
         self.manufacturer = metadata.manufacturer
         self.msrp = metadata.msrp
@@ -243,6 +250,7 @@ extension WishListItem {
         case notes
         case availabilityStatus = "availability_status"
         case dateRetrieved = "date_retrieved"
+        case sortOrder = "sort_order"
         case createdAt = "created_at"
     }
 }
