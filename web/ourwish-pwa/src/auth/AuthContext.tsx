@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
 import { api, getToken, setToken } from '../api/client'
+import type { UpdateProfileInput } from '../api/client'
 import type { User } from '../api/types'
 
 interface AuthContextValue {
@@ -11,6 +12,8 @@ interface AuthContextValue {
   register: (firstName: string, lastName: string, email: string, password: string) => Promise<void>
   refreshCurrentUser: () => Promise<void>
   setCurrentUser: (user: User) => void
+  updateProfile: (input: UpdateProfileInput) => Promise<void>
+  deleteAccount: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined)
@@ -64,6 +67,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setCurrentUserState(user)
   }, [])
 
+  const updateProfile = useCallback(async (input: UpdateProfileInput) => {
+    const user = await api.updateProfile(input)
+    setCurrentUserState(user)
+  }, [])
+
+  // Mirrors AuthStore.deleteAccount() — irreversible, callers are expected to confirm
+  // with the user before calling this.
+  const deleteAccount = useCallback(async () => {
+    await api.deleteAccount()
+    setToken(null)
+    setCurrentUserState(null)
+  }, [])
+
   return (
     <AuthContext.Provider
       value={{
@@ -74,6 +90,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         register,
         refreshCurrentUser,
         setCurrentUser: setCurrentUserState,
+        updateProfile,
+        deleteAccount,
       }}
     >
       {children}

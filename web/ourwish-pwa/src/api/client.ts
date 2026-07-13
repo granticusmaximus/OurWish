@@ -83,10 +83,11 @@ interface ItemInput {
   dateRetrieved?: string | null
 }
 
-interface UpdateProfileInput {
+export interface UpdateProfileInput {
   firstName: string
   lastName: string
   displayName: string
+  email: string
   bio: string | null
   imageBase64: string | null
 }
@@ -135,6 +136,7 @@ export const api = {
       method: 'PUT',
       body: JSON.stringify({ currentPassword, newPassword }),
     }),
+  deleteAccount: () => request<void>('/api/v1/auth/account', { method: 'DELETE' }),
 
   wishLists: () => request<WishList[]>('/api/v1/wishlists'),
   createWishList: (name: string) =>
@@ -178,6 +180,11 @@ export const api = {
     request<void>(`/api/v1/collaborative/lists/${listId}/items/${itemId}/purchase`, {
       method: 'PUT',
       body: JSON.stringify({ isPurchased }),
+    }),
+  setCollaborativeItemHidden: (listId: number, itemId: number, isHidden: boolean) =>
+    request<void>(`/api/v1/collaborative/lists/${listId}/items/${itemId}/hidden`, {
+      method: 'PUT',
+      body: JSON.stringify({ isHidden }),
     }),
   deleteCollaborativeItem: (listId: number, itemId: number) =>
     request<void>(`/api/v1/collaborative/lists/${listId}/items/${itemId}`, { method: 'DELETE' }),

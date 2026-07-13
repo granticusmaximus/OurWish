@@ -7,6 +7,7 @@ import { AddItemModal } from './AddItemModal'
 import { CreateCollaborativeListModal } from './CreateCollaborativeListModal'
 import { CreateWishListModal } from './CreateWishListModal'
 import { ItemsTable } from './ItemsTable'
+import { ProfileModal } from './ProfileModal'
 
 type ListSelection =
   | { kind: 'wish'; id: number }
@@ -60,6 +61,7 @@ export function MainShell({ onCreateNewUser }: { onCreateNewUser: () => void }) 
   const [showAddItemModal, setShowAddItemModal] = useState(false)
   const [showCreateWishListModal, setShowCreateWishListModal] = useState(false)
   const [showCreateCollaborativeListModal, setShowCreateCollaborativeListModal] = useState(false)
+  const [showProfileModal, setShowProfileModal] = useState(false)
   const [isLoadingPartners, setIsLoadingPartners] = useState(false)
   const [partnerLoadError, setPartnerLoadError] = useState<string | null>(null)
   const itemsRequestIdRef = useRef(0)
@@ -243,7 +245,12 @@ export function MainShell({ onCreateNewUser }: { onCreateNewUser: () => void }) 
   }
 
   async function handleToggleHidden(id: number, isHidden: boolean) {
-    await api.setItemHidden(id, isHidden)
+    if (!selectedList) return
+    if (selectedList.kind === 'wish') {
+      await api.setItemHidden(id, isHidden)
+    } else {
+      await api.setCollaborativeItemHidden(selectedList.id, id, isHidden)
+    }
     await refreshSelectedItems()
   }
 
@@ -379,7 +386,14 @@ export function MainShell({ onCreateNewUser }: { onCreateNewUser: () => void }) 
             </button>
             {openMenu === 'account' && (
               <div className="menu-panel menu-panel-account">
-                <button type="button" className="menu-item" disabled title="Profile editing is Phase 9">
+                <button
+                  type="button"
+                  className="menu-item"
+                  onClick={() => {
+                    setOpenMenu(null)
+                    setShowProfileModal(true)
+                  }}
+                >
                   Edit Profile
                 </button>
                 <button
@@ -517,12 +531,12 @@ export function MainShell({ onCreateNewUser }: { onCreateNewUser: () => void }) 
                   items={activeItems}
                   purchasedItems={purchasedItems}
                   showUrlColumn={selectedList.kind === 'wish'}
-                  allowHideToggle={selectedList.kind === 'wish'}
+                  allowHideToggle={true}
                   allowRename={selectedList.kind === 'wish'}
                   onRename={selectedList.kind === 'wish' ? handleRenameWishList : undefined}
                   onSave={handleSaveItem}
                   onTogglePurchased={handleTogglePurchased}
-                  onToggleHidden={selectedList.kind === 'wish' ? handleToggleHidden : undefined}
+                  onToggleHidden={handleToggleHidden}
                   onDelete={handleDeleteItem}
                 />
               )}
@@ -546,6 +560,8 @@ export function MainShell({ onCreateNewUser }: { onCreateNewUser: () => void }) 
           onSubmit={handleCreateCollaborativeList}
         />
       )}
+
+      {showProfileModal && <ProfileModal onClose={() => setShowProfileModal(false)} />}
     </div>
   )
 }
