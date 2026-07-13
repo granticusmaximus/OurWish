@@ -23,7 +23,7 @@ struct WishListItemsTableView: View {
                 purchasedItems: store.purchasedItems.map(ItemRow.init),
                 config: ItemsTableConfig(showURLColumn: true, allowHideToggle: true, allowRename: true),
                 onSave: { id, name, price, quantity, url in
-                    let metadata = store.items.first(where: { $0.id == id })?.metadata ?? .empty
+                    let existingItem = store.items.first(where: { $0.id == id })
                     run {
                         try await store.updateItem(
                             id,
@@ -31,7 +31,8 @@ struct WishListItemsTableView: View {
                             price: price,
                             quantity: quantity,
                             url: url,
-                            metadata: metadata
+                            imageData: existingItem?.imageData,
+                            metadata: existingItem?.metadata ?? .empty
                         )
                     }
                 },

@@ -63,9 +63,12 @@ struct CollaborativeDetailView: View {
             }
         }
         .sheet(item: $editingItem) { item in
-            AddItemSheet(existingItem: item, onClose: { editingItem = nil }) { name, price, quantity, url, _, metadata in
+            AddItemSheet(existingItem: item, onClose: { editingItem = nil }) { name, price, quantity, url, imageData, metadata in
                 guard let itemId = item.id else { return }
-                try await store.updateItem(itemId, productName: name, price: price, quantity: quantity, url: url, metadata: metadata)
+                try await store.updateItem(
+                    itemId, productName: name, price: price, quantity: quantity, url: url,
+                    imageData: imageData, metadata: metadata
+                )
             }
         }
         .confirmationDialog(

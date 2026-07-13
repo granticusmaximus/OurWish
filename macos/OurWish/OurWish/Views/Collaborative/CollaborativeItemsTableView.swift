@@ -23,10 +23,11 @@ struct CollaborativeItemsTableView: View {
                 purchasedItems: store.purchasedItems.map(ItemRow.init),
                 config: ItemsTableConfig(showURLColumn: false, allowHideToggle: true, allowRename: false),
                 onSave: { id, name, price, quantity, url in
-                    let metadata = store.items.first(where: { $0.id == id })?.metadata ?? .empty
+                    let existingItem = store.items.first(where: { $0.id == id })
                     run {
                         try await store.updateItem(
-                            id, productName: name, price: price, quantity: quantity, url: url, metadata: metadata
+                            id, productName: name, price: price, quantity: quantity, url: url,
+                            imageData: existingItem?.imageData, metadata: existingItem?.metadata ?? .empty
                         )
                     }
                 },
