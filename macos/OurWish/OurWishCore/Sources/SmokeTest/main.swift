@@ -367,6 +367,33 @@ do {
     check("updateItem clears the image when passed nil", afterClear?.imageData == nil)
 }
 
+do {
+    let dbQueue = try freshDatabase()
+    let user = try insertUser(dbQueue, email: "a@example.com")
+    let repo = WishListRepository(dbWriter: dbQueue)
+    let list = try repo.createList(userId: user.id!, name: "My Wish List")
+
+    let first = try repo.addItem(listId: list.id!, userId: user.id!, productName: "First", price: 1, quantity: 1, url: nil)
+    let second = try repo.addItem(listId: list.id!, userId: user.id!, productName: "Second", price: 1, quantity: 1, url: nil)
+    let third = try repo.addItem(listId: list.id!, userId: user.id!, productName: "Third", price: 1, quantity: 1, url: nil)
+    let defaultOrder = try repo.items(listId: list.id!, userId: user.id!, purchased: false)
+    check(
+        "default order still matches the previous newest-first behavior",
+        defaultOrder.map(\.id) == [third.id, second.id, first.id]
+    )
+
+    try repo.reorderItems(listId: list.id!, userId: user.id!, orderedItemIds: [first.id!, second.id!, third.id!])
+    let reordered = try repo.items(listId: list.id!, userId: user.id!, purchased: false)
+    check("reorderItems applies the exact given order", reordered.map(\.id) == [first.id, second.id, third.id])
+
+    let fourth = try repo.addItem(listId: list.id!, userId: user.id!, productName: "Fourth", price: 1, quantity: 1, url: nil)
+    let afterAdd = try repo.items(listId: list.id!, userId: user.id!, purchased: false)
+    check(
+        "a newly added item still appears first after a manual reorder",
+        afterAdd.map(\.id) == [fourth.id, first.id, second.id, third.id]
+    )
+}
+
 // MARK: - CollaborativeListRepository
 
 section("CollaborativeListRepository")
@@ -492,6 +519,34 @@ do {
     check("collaborative setHidden persists", afterHide?.isHidden == true)
 }
 
+do {
+    let dbQueue = try freshDatabase()
+    let userA = try insertUser(dbQueue, email: "a@example.com")
+    try insertUser(dbQueue, email: "b@example.com")
+    let repo = CollaborativeListRepository(dbWriter: dbQueue)
+    let list = try repo.createList(currentUserId: userA.id!, partnerEmail: "b@example.com", name: "Vacation")
+
+    let first = try repo.addItem(listId: list.id!, userId: userA.id!, productName: "First", price: 1, quantity: 1, url: nil)
+    let second = try repo.addItem(listId: list.id!, userId: userA.id!, productName: "Second", price: 1, quantity: 1, url: nil)
+    let third = try repo.addItem(listId: list.id!, userId: userA.id!, productName: "Third", price: 1, quantity: 1, url: nil)
+    let defaultOrder = try repo.items(listId: list.id!, userId: userA.id!, purchased: false)
+    check(
+        "collaborative default order still matches the previous newest-first behavior",
+        defaultOrder.map(\.id) == [third.id, second.id, first.id]
+    )
+
+    try repo.reorderItems(listId: list.id!, userId: userA.id!, orderedItemIds: [first.id!, second.id!, third.id!])
+    let reordered = try repo.items(listId: list.id!, userId: userA.id!, purchased: false)
+    check("collaborative reorderItems applies the exact given order", reordered.map(\.id) == [first.id, second.id, third.id])
+
+    let fourth = try repo.addItem(listId: list.id!, userId: userA.id!, productName: "Fourth", price: 1, quantity: 1, url: nil)
+    let afterAdd = try repo.items(listId: list.id!, userId: userA.id!, purchased: false)
+    check(
+        "collaborative: a newly added item still appears first after a manual reorder",
+        afterAdd.map(\.id) == [fourth.id, first.id, second.id, third.id]
+    )
+}
+
 // MARK: - DatabaseManager path resolution
 
 section("DatabaseManager")
@@ -573,6 +628,31 @@ do {
     check("service failures during refresh surface via lastError", store.lastError == "boom")
 }
 
+do {
+    let service = FakeWishListStoreService()
+    let store = WishListStore(service: service)
+    store.setCurrentUser(1)
+    try await store.createList(name: "Groceries")
+
+    try await store.addItem(productName: "A", price: 1, quantity: 1, url: nil)
+    try await store.addItem(productName: "B", price: 1, quantity: 1, url: nil)
+    try await store.addItem(productName: "C", price: 1, quantity: 1, url: nil)
+
+    if let itemB = store.items.first(where: { $0.productName == "B" })?.id,
+       let itemC = store.items.first(where: { $0.productName == "C" })?.id {
+        try await store.setHidden(itemB, isHidden: true)
+        // Visible order is now [A, C] (B is hidden). Moving C "up" should swap it
+        // with A — the nearest *visible* neighbor — not with the hidden B in between.
+        try await store.moveItem(itemC, direction: .up)
+        check(
+            "moveItem up skips a hidden item and swaps with the nearest visible neighbor",
+            store.items.filter { !$0.isHidden }.map(\.productName) == ["C", "A"]
+        )
+    } else {
+        check("reorder test setup produced the expected items", false)
+    }
+}
+
 // MARK: - CollaborativeStore
 
 section("CollaborativeStore")
@@ -610,6 +690,32 @@ do {
     store.setCurrentUser(3)
     try? await Task.sleep(for: .milliseconds(100))
     check("service failures during refresh surface via lastError", store.lastError == "boom")
+}
+
+do {
+    let service = FakeCollaborativeStoreService()
+    await service.seedPartner(
+        User(id: 2, firstName: "Bailey", lastName: "User", displayName: "Bailey", email: "b@example.com", passwordHash: "")
+    )
+    let store = CollaborativeStore(service: service)
+    store.setCurrentUser(1)
+    try await store.createList(partnerEmail: "b@example.com", name: "Vacation")
+
+    try await store.addItem(productName: "A", price: 1, quantity: 1, url: nil)
+    try await store.addItem(productName: "B", price: 1, quantity: 1, url: nil)
+    try await store.addItem(productName: "C", price: 1, quantity: 1, url: nil)
+
+    if let itemB = store.items.first(where: { $0.productName == "B" })?.id,
+       let itemC = store.items.first(where: { $0.productName == "C" })?.id {
+        try await store.setHidden(itemB, isHidden: true)
+        try await store.moveItem(itemC, direction: .up)
+        check(
+            "collaborative moveItem up skips a hidden item and swaps with the nearest visible neighbor",
+            store.items.filter { !$0.isHidden }.map(\.productName) == ["C", "A"]
+        )
+    } else {
+        check("collaborative reorder test setup produced the expected items", false)
+    }
 }
 
 // MARK: - Summary
